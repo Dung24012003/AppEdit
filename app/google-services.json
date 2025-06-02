@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "132795097052",
+    "project_id": "photoeditor-5221f",
+    "storage_bucket": "photoeditor-5221f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:132795097052:android:60aeece8d7b01ca1c1f919",
+        "android_client_info": {
+          "package_name": "com.example.dungappedit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwYXsDwSKbk876ajMnpAyo8U2pI7FxnlA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
