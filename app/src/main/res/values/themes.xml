@@ -1,11 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.DungAppEdit" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Base.Theme.DungAppEdit" parent="Theme.Material3.DayNight.NoActionBar">
 
-    <style name="Theme.MyApp.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/white</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/avatarappedit</item>
-        <item name="postSplashScreenTheme">@style/Theme.DungAppEdit</item>
     </style>
 
+    <style name="Theme.DungAppEdit" parent="Base.Theme.DungAppEdit" />
 
 </resources>
