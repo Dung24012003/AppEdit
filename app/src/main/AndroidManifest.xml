@@ -16,10 +16,15 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/avatarappedit"
         android:supportsRtl="true"
-
+        android:theme="@style/Theme.DungAppEdit"
         tools:targetApi="31">
+
         <activity
             android:name=".ui.MainActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.DungAppEdit">
             <intent-filter>

@@ -1,6 +1,7 @@
 package com.example.dungappedit.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -8,33 +9,38 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.dungappedit.R
 import com.example.dungappedit.databinding.FragmentCameraBinding
+import com.google.android.material.tabs.TabLayout
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import androidx.core.view.isVisible
-import com.google.android.material.tabs.TabLayout
+import java.util.concurrent.TimeUnit
 
 class CameraFragment : Fragment(R.layout.fragment_camera) {
 
@@ -53,6 +59,12 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     private var lensFacing = CameraSelector.LENS_FACING_BACK //select camera truoc or sau
 
     private var timer: CountDownTimer? = null //timer
+
+    private var isGridVisible = false
+
+    private var scaleGestureDetector: ScaleGestureDetector? = null
+
+    private var isZooming = false
 
     companion object { //???
         private const val REQUEST_CODE_PERMISSIONS = 10
@@ -76,16 +88,35 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     }
 
     private fun initUi() {
+        scaleGestureDetector = ScaleGestureDetector(requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                isZooming = true  // Bắt đầu zoom
+                return true
+            }
+
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val currentZoomRatio = camera?.cameraInfo?.zoomState?.value?.zoomRatio ?: 1f
+                val scale = detector.scaleFactor
+                camera?.cameraControl?.setZoomRatio(currentZoomRatio * scale)
+                return true
+            }
+
+            override fun onScaleEnd(detector: ScaleGestureDetector) {
+                // Kết thúc zoom, delay 1 chút rồi cho phép lấy nét lại
+                Handler(Looper.getMainLooper()).postDelayed({
+                    isZooming = false
+                }, 300)
+            }
+        })
+
         timerOptions.forEach { time ->
             val tab = binding.tabTimer.newTab().setText(time)
             binding.tabTimer.addTab(tab)
         }
-
-        // Spinner Aspect Ratio
-        val adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, aspectRatios)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerAspectRatio.adapter = adapter //hien thi danh sach chon retios
+        aspectRatios.forEach { ratio ->
+            val tab = binding.tabRatio.newTab().setText(ratio)
+            binding.tabRatio.addTab(tab)
+        }
 
         viewModel.aspectRatio.observe(viewLifecycleOwner) { ratio ->
             updatePreviewSize(ratio) //cap nhat kich thuoc preview
@@ -93,39 +124,80 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun initListeners() {
-        binding.tabTimer.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab) {
-                // TODO: Thực hiện xử lý filter tại đây nếu cần
+        binding.viewFinder.setOnTouchListener { _, event ->
+            scaleGestureDetector!!.onTouchEvent(event)
 
-                // Ẩn TabLayout sau khi chọn
-                binding.tabTimer.visibility = View.GONE
+            // Nếu đang zoom, bỏ qua lấy nét
+            if (isZooming) return@setOnTouchListener true
+
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> true
+                MotionEvent.ACTION_UP -> {
+                    val factory = binding.viewFinder.meteringPointFactory
+                    val point = factory.createPoint(event.x, event.y)
+                    val action = FocusMeteringAction.Builder(point)
+                        .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                        .build()
+                    camera?.cameraControl?.startFocusAndMetering(action)
+                    showFocus(event.x, event.y)
+                    true
+                }
+                else -> false
+            }
+        }
+
+        binding.imgBtnGrit.setOnClickListener {
+            isGridVisible = !isGridVisible
+            binding.gridOverlay.visibility = if (isGridVisible) View.VISIBLE else View.GONE
+        }
+
+        binding.tabRatio.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                val position = tab.position
+                viewModel.setAspectRatio(aspectRatios[position])
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {}
         })
 
+        binding.root.setOnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                // Kiểm tra nếu không chạm vào tabTimer hoặc tabRatio thì ẩn chúng
+                val locationTimer = IntArray(2)
+                val locationRatio = IntArray(2)
+                binding.tabTimer.getLocationOnScreen(locationTimer)
+                binding.tabRatio.getLocationOnScreen(locationRatio)
+
+                val x = event.rawX.toInt()
+                val y = event.rawY.toInt()
+
+                val inTabTimer =
+                    x in locationTimer[0]..(locationTimer[0] + binding.tabTimer.width) &&
+                            y in locationTimer[1]..(locationTimer[1] + binding.tabTimer.height)
+
+                val inTabRatio =
+                    x in locationRatio[0]..(locationRatio[0] + binding.tabRatio.width) &&
+                            y in locationRatio[1]..(locationRatio[1] + binding.tabRatio.height)
+
+                if (!inTabTimer && !inTabRatio) {
+                    binding.tabTimer.visibility = View.GONE
+                    binding.tabRatio.visibility = View.GONE
+                }
+            }
+            false
+        }
+
 
         binding.imgBtnTimer.setOnClickListener {
             binding.tabTimer.visibility =
                 if (binding.tabTimer.isVisible) View.GONE else View.VISIBLE
+
+            binding.tabRatio.visibility =
+                if (binding.tabRatio.isVisible) View.GONE else View.VISIBLE
         }
-
-        binding.spinnerAspectRatio.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    v: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    val ratio = aspectRatios[position]
-                    viewModel.setAspectRatio(ratio)
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
-            }
 
         // Flash toggle
         binding.imgBtnFlas.setOnClickListener {
@@ -134,7 +206,8 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                 if (hasFlash) {
                     camera?.cameraControl?.enableTorch(isTorchOn)
                     binding.imgBtnFlas.setBackgroundResource(
-                        if (isTorchOn) R.drawable.offlas else R.drawable.onflas                    )
+                        if (isTorchOn) R.drawable.offlas else R.drawable.onflas
+                    )
                 } else {
                     Toast.makeText(context, "Camera không hỗ trợ đèn flash", Toast.LENGTH_SHORT)
                         .show()
@@ -151,8 +224,32 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
 
         // Capture button click
         binding.imgBtnCapture.setOnClickListener {
+            binding.tabTimer.visibility = View.GONE
+
+            binding.tabRatio.visibility = View.GONE
             startCaptureWithTimer() //chup anh + dem nguoc
         }
+    }
+
+    private fun showFocus(x: Float, y: Float) {
+        val focusView = View(requireContext()).apply {
+            layoutParams = FrameLayout.LayoutParams(200, 200).apply {
+                leftMargin = (x - 100).toInt()
+                topMargin = (y - 100).toInt()
+                Log.d("checkxy", "${x.toInt()} ${y.toInt()}")
+            }
+            background = ContextCompat.getDrawable(
+                requireContext(),
+                R.drawable.showfocus
+            )
+        }
+        binding.viewFinder.addView(focusView)
+        focusView.animate()
+            .scaleX(1.5f).scaleY(1.5f)
+            .alpha(0f)
+            .setDuration(600)
+            .withEndAction { binding.root.removeView(focusView) }
+            .start()
     }
 
     private fun updatePreviewSize(ratio: String) {
