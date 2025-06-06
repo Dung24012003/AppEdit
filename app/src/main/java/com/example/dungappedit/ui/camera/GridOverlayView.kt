@@ -1,7 +1,8 @@
-package com.example.dungappedit.ui
+package com.example.dungappedit.ui.camera
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
@@ -12,7 +13,7 @@ class GridOverlayView @JvmOverloads constructor(
 ) : View(context, attrs) {
 
     private val paint = Paint().apply {
-        color = android.graphics.Color.WHITE
+        color = Color.WHITE
         strokeWidth = 2f
         alpha = 100
     }

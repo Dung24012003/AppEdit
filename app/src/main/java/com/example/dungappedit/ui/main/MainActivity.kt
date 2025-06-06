@@ -1,11 +1,11 @@
-package com.example.dungappedit.ui
+package com.example.dungappedit.ui.main
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import com.example.dungappedit.databinding.ActivityMainBinding
+import com.example.dungappedit.ui.camera.CameraFragment
 
-class MainActivity : AppCompatActivity() { // ? bug
+class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -13,7 +13,7 @@ class MainActivity : AppCompatActivity() { // ? bug
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Thêm fragment CameraFragment
+
         supportFragmentManager.beginTransaction()
             .replace(binding.fragmentContainer.id, CameraFragment())
             .commit()

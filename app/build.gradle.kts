@@ -58,6 +58,8 @@ dependencies {
 
     implementation ("androidx.fragment:fragment-ktx:1.5.7")
 
+    implementation ("jp.co.cyberagent.android:gpuimage:2.1.0")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
