@@ -20,7 +20,7 @@ enum class CameraFilter {
     COOL,
     COMIC,
     PENCIL,
-    BLING;
+    VIGNETTE;
 
     fun createFilter(): GPUImageFilter {
         return when (this) {
@@ -102,7 +102,7 @@ enum class CameraFilter {
                 }
             }
 
-            BLING -> GPUImageFilterGroup().apply {
+            VIGNETTE -> GPUImageFilterGroup().apply {
                 addFilter(
                     GPUImageVignetteFilter(
                         PointF(0.5f, 0.5f),

@@ -1,6 +1,5 @@
 package com.example.dungappedit.ui.camera.filter
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -11,7 +10,6 @@ import android.widget.TextView
 import com.example.dungappedit.R
 import com.google.android.material.tabs.TabLayout
 import jp.co.cyberagent.android.gpuimage.GPUImage
-import kotlin.math.ceil
 
 class FilterTabAdapter(private val context: Context) {
 
@@ -33,7 +31,7 @@ class FilterTabAdapter(private val context: Context) {
         tabLayout.setScrollPosition(0, 0f, false)
         tabLayout.isHorizontalScrollBarEnabled = false
 
-        CameraFilter.entries.forEach { filter ->
+        CameraFilter.values().forEach { filter ->
             val tab = tabLayout.newTab()
             val customView = createTabView(filter)
             tab.customView = customView
@@ -42,7 +40,7 @@ class FilterTabAdapter(private val context: Context) {
 
         // Thêm các tab đệm để căn giữa tab đầu tiên
         addPaddingTabs(tabLayout)
-        val paddingTabsCount = ceil(
+        val paddingTabsCount = Math.ceil(
             (context.resources.displayMetrics.widthPixels /
                     (2 * context.resources.displayMetrics.density * 80)).toDouble()
         ).toInt()
@@ -60,7 +58,7 @@ class FilterTabAdapter(private val context: Context) {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 val screenWidth = context.resources.displayMetrics.widthPixels
                 val tabWidth = context.resources.displayMetrics.density * 80
-                val paddingTabsCount = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+                val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
                 // Xử lý tab đệm
                 if (tab.position < paddingTabsCount || tab.position >= tabLayout.tabCount - paddingTabsCount) {
@@ -79,8 +77,8 @@ class FilterTabAdapter(private val context: Context) {
 
                 updateSelectedTab(tab)
                 val filterPosition = tab.position - paddingTabsCount
-                if (filterPosition >= 0 && filterPosition < CameraFilter.entries.size) {
-                    val filter = CameraFilter.entries[filterPosition]
+                if (filterPosition >= 0 && filterPosition < CameraFilter.values().size) {
+                    val filter = CameraFilter.values()[filterPosition]
                     onFilterSelected(filter)
                 }
                 currentSelectedTab = tab
@@ -102,7 +100,7 @@ class FilterTabAdapter(private val context: Context) {
             val tab = tabLayout.getTabAt(i) ?: continue
             val screenWidth = context.resources.displayMetrics.widthPixels
             val tabWidth = context.resources.displayMetrics.density * 80
-            val paddingTabsCount = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+            val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
             if (i >= paddingTabsCount && i < tabLayout.tabCount - paddingTabsCount) {
                 tab.view.setOnClickListener {
@@ -130,7 +128,7 @@ class FilterTabAdapter(private val context: Context) {
         // Thêm tab đệm để các tab đầu/cuối có thể đạt đến trung tâm
         val screenWidth = context.resources.displayMetrics.widthPixels
         val tabWidth = context.resources.displayMetrics.density * 80
-        val paddingTabsNeeded = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+        val paddingTabsNeeded = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
         // Thêm tab đệm ở đầu
         for (i in 0 until paddingTabsNeeded) {
@@ -147,7 +145,6 @@ class FilterTabAdapter(private val context: Context) {
         }
     }
 
-    @SuppressLint("InflateParams")
     private fun createPaddingView(): View {
         val view = LayoutInflater.from(context).inflate(R.layout.item_filter_tab, null)
         // Làm cho view vô hình nhưng giữ nguyên kích thước
@@ -165,7 +162,6 @@ class FilterTabAdapter(private val context: Context) {
         }
     }
 
-    @SuppressLint("InflateParams")
     private fun createTabView(filter: CameraFilter): View {
         val view = LayoutInflater.from(context).inflate(R.layout.item_filter_tab, null)
         val imageView = view.findViewById<ImageView>(R.id.filter_preview)
@@ -192,7 +188,7 @@ class FilterTabAdapter(private val context: Context) {
             CameraFilter.COOL -> "Lạnh"
             CameraFilter.COMIC -> "Truyện"
             CameraFilter.PENCIL -> "Vẽ"
-            CameraFilter.BLING -> "Lấp lánh"
+            CameraFilter.VIGNETTE -> "Bo gốc"
         }
     }
 } 

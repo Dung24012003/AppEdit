@@ -22,18 +22,24 @@ class CameraViewModel : ViewModel() {
     private val _isGridVisible = MutableLiveData(false)
     val isGridVisible: LiveData<Boolean> = _isGridVisible
 
-    private val _isTimerAndRatioVisible = MutableLiveData(false)
-    val isTimerAndRatioVisible: LiveData<Boolean> = _isTimerAndRatioVisible
+    private val _isTimerRatioContainerVisible = MutableLiveData(false)
+    val isTimerRatioContainerVisible: LiveData<Boolean> = _isTimerRatioContainerVisible
 
     private val _timerSeconds = MutableLiveData(0)
     val timerSeconds: LiveData<Int> = _timerSeconds
+
+    private val _isBrightnessControlVisible = MutableLiveData(false)
+    val isBrightnessControlVisible: LiveData<Boolean> = _isBrightnessControlVisible
+
+    private val _brightnessLevel = MutableLiveData(50)
+    val brightnessLevel: LiveData<Int> = _brightnessLevel
 
     fun setAspectRatio(ratio: String) {
         _aspectRatio.value = ratio
     }
 
     fun toggleFlash() {
-        _isFlashEnabled.value = _isFlashEnabled.value != true
+        _isFlashEnabled.value = !(_isFlashEnabled.value ?: false)
     }
 
     fun setFilter(filter: CameraFilter) {
@@ -44,19 +50,49 @@ class CameraViewModel : ViewModel() {
         _lensFacing.value = if (_lensFacing.value == CameraSelector.LENS_FACING_BACK) {
             CameraSelector.LENS_FACING_FRONT
         } else {
+            _isFlashEnabled.value = false
             CameraSelector.LENS_FACING_BACK
         }
     }
 
     fun toggleGrid() {
-        _isGridVisible.value = _isGridVisible.value != true
+        _isGridVisible.value = !(_isGridVisible.value ?: false)
     }
 
-    fun toggleTimerAndRatio() {
-        _isTimerAndRatioVisible.value = _isTimerAndRatioVisible.value != true
+    fun toggleTimerRatioContainer() {
+        _isTimerRatioContainerVisible.value = !(_isTimerRatioContainerVisible.value ?: false)
+
+        // Khi hiển thị container, ẩn các control khác
+        if (_isTimerRatioContainerVisible.value == true) {
+            _isBrightnessControlVisible.value = false
+        }
     }
 
     fun setTimerSeconds(seconds: Int) {
         _timerSeconds.value = seconds
+    }
+
+    fun toggleBrightnessControl() {
+        _isBrightnessControlVisible.value = !(_isBrightnessControlVisible.value ?: false)
+
+        // Khi hiển thị brightness control, ẩn các control khác
+        if (_isBrightnessControlVisible.value == true && _isTimerRatioContainerVisible.value == true) {
+            _isTimerRatioContainerVisible.value = false
+        }
+    }
+
+    fun setBrightnessLevel(level: Int) {
+        _brightnessLevel.value = level.coerceIn(0, 100)
+    }
+
+    fun resetBrightnessLevel() {
+        _brightnessLevel.value = 50
+    }
+
+    fun toggleTimerRatioContainerAndBrightnessControl() {
+        when{
+            _isBrightnessControlVisible.value == true -> _isBrightnessControlVisible.value = false
+            _isTimerRatioContainerVisible.value == true -> _isTimerRatioContainerVisible.value = false
+        }
     }
 }

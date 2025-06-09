@@ -20,9 +20,16 @@ import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.MotionEvent
+import android.view.OrientationEventListener
 import android.view.ScaleGestureDetector
+import android.view.Surface
 import android.view.View
+import android.view.ViewGroup
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
+import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -55,8 +62,6 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
-import kotlin.math.ceil
 
 class CameraFragment : Fragment(R.layout.fragment_camera) {
 
@@ -83,6 +88,9 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     private lateinit var imageAnalysis: ImageAnalysis
     private lateinit var filterManager: CameraFilterManager
 
+    private var deviceOrientation = 0
+    private lateinit var orientationEventListener: OrientationEventListener
+
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS =
@@ -107,6 +115,37 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         setupObservers()
         setupListeners()
         setupCamera()
+        setupOrientationListener()
+    }
+
+    private fun setupOrientationListener() {
+        orientationEventListener = object : OrientationEventListener(requireContext()) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == ORIENTATION_UNKNOWN) return
+
+                // Chuyển đổi orientation thành một trong 4 hướng chính: 0, 90, 180, 270
+                val rotation = when {
+                    orientation <= 45 || orientation > 315 -> Surface.ROTATION_0
+                    orientation > 45 && orientation <= 135 -> Surface.ROTATION_90
+                    orientation > 135 && orientation <= 225 -> Surface.ROTATION_180
+                    else -> Surface.ROTATION_270
+                }
+
+                // Lưu hướng hiện tại của thiết bị
+                when (rotation) {
+                    Surface.ROTATION_0 -> deviceOrientation = 0
+                    Surface.ROTATION_90 -> deviceOrientation = 90
+                    Surface.ROTATION_180 -> deviceOrientation = 180
+                    Surface.ROTATION_270 -> deviceOrientation = 270
+                }
+
+                imageCapture?.targetRotation = rotation
+            }
+        }
+
+        if (orientationEventListener.canDetectOrientation()) {
+            orientationEventListener.enable()
+        }
     }
 
     private fun setupViews() {
@@ -137,6 +176,41 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         setupTabs()
         setupAspectRatioTabs()
         setupTimerTabs()
+        setupBrightnessControl()
+    }
+
+    private fun setupBrightnessControl() {
+        binding.imgBtnBrightness.setOnClickListener {
+            viewModel.toggleBrightnessControl()
+        }
+
+        // Tăng kích thước vùng chạm của SeekBar để dễ kéo hơn
+        binding.brightnessSeekBar.setPadding(0, 30, 0, 30)
+
+        binding.brightnessSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    viewModel.setBrightnessLevel(progress)
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                // Hiển thị giá trị độ sáng khi bắt đầu kéo
+                Log.d("CameraFragment", "Bắt đầu điều chỉnh độ sáng")
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                // Lưu giá trị độ sáng khi kết thúc kéo
+                Log.d("CameraFragment", "Kết thúc điều chỉnh độ sáng: ${seekBar?.progress}")
+            }
+        })
+
+        // Xử lý sự kiện cho nút reset độ sáng
+        binding.btnResetBrightness.setOnClickListener {
+            viewModel.resetBrightnessLevel()
+            // Hiển thị thông báo nhỏ
+            Toast.makeText(requireContext(), "Đã đặt lại độ sáng về mức mặc định", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupObservers() {
@@ -163,12 +237,68 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         viewModel.lensFacing.observe(viewLifecycleOwner) { facing ->
             restartCamera()
         }
+
+        viewModel.isBrightnessControlVisible.observe(viewLifecycleOwner) { isVisible ->
+            binding.brightnessControlLayout.visibility = if (isVisible) View.VISIBLE else View.GONE
+            // Khi hiển thị thanh điều chỉnh độ sáng, cập nhật giá trị hiện tại
+            if (isVisible) {
+                binding.brightnessSeekBar.progress = viewModel.brightnessLevel.value ?: 50
+            }
+        }
+
+        viewModel.brightnessLevel.observe(viewLifecycleOwner) { level ->
+            binding.brightnessSeekBar.progress = level
+
+            // Áp dụng độ sáng cho camera nếu hỗ trợ
+            camera?.cameraControl?.let { cameraControl ->
+                try {
+                    // Kiểm tra xem camera có hỗ trợ điều chỉnh độ sáng không
+                    val exposureState = camera?.cameraInfo?.exposureState
+                    if (exposureState?.isExposureCompensationSupported == true) {
+                        // Chuyển đổi từ thang đo 0-100 sang phạm vi của camera
+                        val minValue = exposureState.exposureCompensationRange.lower
+                        val maxValue = exposureState.exposureCompensationRange.upper
+
+                        // Giới hạn phạm vi điều chỉnh để tránh quá sáng hoặc quá tối
+                        // Sử dụng 60% phạm vi của camera, tập trung vào khoảng giữa
+                        val effectiveRange = (maxValue - minValue) * 0.6f
+                        val midPoint = (maxValue + minValue) / 2
+
+                        // Map giá trị từ 0-100 sang phạm vi hiệu quả, với 50 là giá trị trung tâm
+                        // Sử dụng hàm phi tuyến để có độ nhạy thấp ở giữa và cao ở hai đầu
+                        val normalizedLevel = (level - 50) / 50f // -1.0 đến 1.0
+
+                        // Điều chỉnh đường cong để tối hơn ở phía tối và sáng hơn ở phía sáng
+                        val adjustedLevel = if (normalizedLevel < 0) {
+                            // Phía tối: tăng cường độ tối bằng cách sử dụng mũ nhỏ hơn
+                            -Math.pow(Math.abs(normalizedLevel).toDouble(), 0.8)
+                        } else {
+                            // Phía sáng: giữ nguyên đường cong
+                            Math.pow(normalizedLevel.toDouble(), 1.2)
+                        }
+
+                        val exposureValue = midPoint + (adjustedLevel * effectiveRange / 2).toInt()
+
+                        // Đảm bảo giá trị nằm trong phạm vi cho phép
+                        val clampedValue = exposureValue.toInt().coerceIn(minValue, maxValue)
+
+                        Log.d("CameraFragment", "Độ sáng: $level, ExposureValue: $clampedValue (phạm vi: $minValue đến $maxValue)")
+                        cameraControl.setExposureCompensationIndex(clampedValue)
+                    }
+                } catch (e: Exception) {
+                    Log.e("CameraFragment", "Không thể điều chỉnh độ sáng: ${e.message}")
+                }
+            }
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupListeners() {
         // Set touch listener on the root container to handle camera interactions
         binding.previewContainer.setOnTouchListener { _, event ->
+
+            viewModel.toggleTimerRatioContainerAndBrightnessControl()
+
             scaleGestureDetector!!.onTouchEvent(event)
             if (isZooming) return@setOnTouchListener true
 
@@ -206,13 +336,42 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         }
 
         binding.imgBtnTimerAndRatio.setOnClickListener {
-            viewModel.toggleTimerAndRatio()
+            viewModel.toggleTimerRatioContainer()
+        }
+
+        binding.imgBtnBrightness.setOnClickListener {
+            viewModel.toggleBrightnessControl()
         }
 
         // Observe timer and ratio visibility from ViewModel
-        viewModel.isTimerAndRatioVisible.observe(viewLifecycleOwner) { isVisible ->
-            binding.tabTimer.visibility = if (isVisible) View.VISIBLE else View.GONE
-            binding.tabRatio.visibility = if (isVisible) View.VISIBLE else View.GONE
+        viewModel.isTimerRatioContainerVisible.observe(viewLifecycleOwner) { isVisible ->
+            if (isVisible) {
+                binding.timerRatioContainer.visibility = View.VISIBLE
+                binding.timerRatioContainer.startAnimation(
+                    AnimationUtils.loadAnimation(requireContext(), R.anim.slide_in_top)
+                )
+            } else {
+                val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_out_top)
+                animation.setAnimationListener(object : Animation.AnimationListener {
+                    override fun onAnimationStart(animation: Animation?) {}
+
+                    override fun onAnimationEnd(animation: Animation?) {
+                        binding.timerRatioContainer.visibility = View.GONE
+                    }
+
+                    override fun onAnimationRepeat(animation: Animation?) {}
+                })
+                binding.timerRatioContainer.startAnimation(animation)
+            }
+        }
+
+        // Observe brightness control visibility
+        viewModel.isBrightnessControlVisible.observe(viewLifecycleOwner) { isVisible ->
+            binding.brightnessControlLayout.visibility = if (isVisible) View.VISIBLE else View.GONE
+            // Khi hiển thị thanh điều chỉnh độ sáng, cập nhật giá trị hiện tại
+            if (isVisible) {
+                binding.brightnessSeekBar.progress = viewModel.brightnessLevel.value ?: 50
+            }
         }
     }
 
@@ -235,7 +394,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         binding.tabFilter.post {
             val screenWidth = resources.displayMetrics.widthPixels
             val tabWidth = resources.displayMetrics.density * 80
-            val paddingTabsCount = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+            val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
             val originalTabPosition = paddingTabsCount
             val originalTab = binding.tabFilter.getTabAt(originalTabPosition)
@@ -292,7 +451,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
 
         val screenWidth = resources.displayMetrics.widthPixels
         val tabWidth = resources.displayMetrics.density * 80
-        val paddingTabsCount = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+        val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
         val startIndex = paddingTabsCount
         val endIndex = binding.tabFilter.tabCount - paddingTabsCount
@@ -305,7 +464,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             val tabCenter = tabView.left + tabView.width / 2 - scrollX
 
             // Tính khoảng cách từ trung tâm màn hình
-            val distance = abs(screenCenter - tabCenter)
+            val distance = Math.abs(screenCenter - tabCenter)
 
             // Cập nhật tab gần nhất nếu tab này gần hơn
             if (distance < minDistance) {
@@ -324,7 +483,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
 
         val screenWidth = resources.displayMetrics.widthPixels
         val tabWidth = resources.displayMetrics.density * 80
-        val paddingTabsCount = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+        val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
         val startIndex = paddingTabsCount
         val endIndex = binding.tabFilter.tabCount - paddingTabsCount
@@ -333,7 +492,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             val tab = binding.tabFilter.getTabAt(i) ?: continue
             val tabView = tab.view
             val tabCenter = tabView.left + tabView.width / 2 - scrollX
-            val distance = abs(screenCenter - tabCenter)
+            val distance = Math.abs(screenCenter - tabCenter)
 
             if (distance < minDistance) {
                 minDistance = distance
@@ -348,7 +507,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             val tabView = tab.view
             val threshold = tabView.width * 0.4 // 40% chiều rộng tab để chọn mượt mà hơn
             val tabCenter = tabView.left + tabView.width / 2 - scrollX
-            val distance = abs(screenCenter - tabCenter)
+            val distance = Math.abs(screenCenter - tabCenter)
 
             if (distance <= threshold && binding.tabFilter.selectedTabPosition != tab.position) {
                 tab.select()
@@ -357,36 +516,140 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     }
 
     private fun setupAspectRatioTabs() {
+        // Xóa tab cũ nếu có
+        binding.tabRatio.removeAllTabs()
+
+        // Thêm các tab mới với text căn giữa
         aspectRatios.forEach { ratio ->
-            binding.tabRatio.addTab(binding.tabRatio.newTab().setText(ratio))
+            val tab = binding.tabRatio.newTab()
+            tab.text = ratio
+            binding.tabRatio.addTab(tab)
         }
 
         binding.tabRatio.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 viewModel.setAspectRatio(aspectRatios[tab.position])
+
+                // Cập nhật UI cho tab được chọn
+                updateTabAppearance(tab, true)
             }
 
-            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
+            override fun onTabUnselected(tab: TabLayout.Tab?) {
+                // Cập nhật UI cho tab không được chọn
+                tab?.let { updateTabAppearance(it, false) }
+            }
+
+            override fun onTabReselected(tab: TabLayout.Tab?) {
+                tab?.let { updateTabAppearance(it, true) }
+            }
         })
+
+        // Chọn tab mặc định (3:4)
+        val defaultRatioIndex = aspectRatios.indexOf(viewModel.aspectRatio.value)
+        if (defaultRatioIndex >= 0) {
+            binding.tabRatio.getTabAt(defaultRatioIndex)?.let { tab ->
+                tab.select()
+                updateTabAppearance(tab, true)
+            }
+        }
     }
 
     private fun setupTimerTabs() {
+        // Xóa tab cũ nếu có
+        binding.tabTimer.removeAllTabs()
+
+        // Thêm các tab mới với text căn giữa và định dạng
         timerOptions.forEach { time ->
-            binding.tabTimer.addTab(binding.tabTimer.newTab().setText(time))
+            val tab = binding.tabTimer.newTab()
+            if (time == "0") {
+                tab.text = "Tắt"
+            } else {
+                tab.text = "${time}s"
+            }
+            binding.tabTimer.addTab(tab)
         }
 
         binding.tabTimer.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 val seconds = timerOptions[tab.position].toIntOrNull() ?: 0
                 viewModel.setTimerSeconds(seconds)
-                // Hide timer and ratio tabs after selection
-                viewModel.toggleTimerAndRatio()
+
+                // Cập nhật UI cho tab được chọn
+                updateTabAppearance(tab, true)
+
+                // Không tự động ẩn container sau khi chọn
             }
 
-            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
+            override fun onTabUnselected(tab: TabLayout.Tab?) {
+                // Cập nhật UI cho tab không được chọn
+                tab?.let { updateTabAppearance(it, false) }
+            }
+
+            override fun onTabReselected(tab: TabLayout.Tab?) {
+                tab?.let { updateTabAppearance(it, true) }
+            }
         })
+
+        // Chọn tab mặc định (0s)
+        val defaultTimerIndex = timerOptions.indexOf(viewModel.timerSeconds.value.toString())
+        if (defaultTimerIndex >= 0) {
+            binding.tabTimer.getTabAt(defaultTimerIndex)?.let { tab ->
+                tab.select()
+                updateTabAppearance(tab, true)
+            }
+        }
+    }
+
+    // Hàm cập nhật giao diện cho tab
+    private fun updateTabAppearance(tab: TabLayout.Tab, isSelected: Boolean) {
+        try {
+            val tabView = tab.view
+
+            // Tìm TextView trong tab
+            var textView: TextView? = null
+            for (i in 0 until tabView.childCount) {
+                val child = tabView.getChildAt(i)
+                if (child is TextView) {
+                    textView = child
+                    break
+                }
+            }
+
+            textView?.let { tv ->
+                // Đặt gravity để text nằm chính giữa
+                tv.gravity = android.view.Gravity.CENTER
+
+                // Thiết lập background cho TextView dựa vào trạng thái
+                if (isSelected) {
+                    tv.setBackgroundResource(R.drawable.tab_selected_background)
+                    tv.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                } else {
+                    tv.setBackgroundResource(android.R.color.transparent)
+                    tv.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white))
+                }
+
+                // Đảm bảo padding đúng
+                tv.setPadding(16, 8, 16, 8)
+            }
+
+            // Hiệu ứng khi chọn tab
+            if (isSelected) {
+                tabView.animate()
+                    .scaleX(1.05f)
+                    .scaleY(1.05f)
+                    .setDuration(150)
+                    .withEndAction {
+                        tabView.animate()
+                            .scaleX(1.0f)
+                            .scaleY(1.0f)
+                            .setDuration(100)
+                            .start()
+                    }
+                    .start()
+            }
+        } catch (e: Exception) {
+            Log.e("CameraFragment", "Lỗi khi cập nhật giao diện tab: ${e.message}")
+        }
     }
 
     private fun startCamera() {
@@ -405,9 +668,20 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     private fun bindCameraUseCases() {
         val cameraProvider = cameraProvider ?: return
 
+        val rotation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            requireContext().display?.rotation ?: Surface.ROTATION_0
+        } else {
+            @Suppress("DEPRECATION")
+            requireActivity().windowManager.defaultDisplay.rotation
+        }
+
         val preview = Preview.Builder()
-            .setTargetRotation(binding.gpuView.display.rotation)
+            .setTargetRotation(rotation)
             .build()
+
+//        val preview = Preview.Builder()
+//            .setTargetRotation(binding.gpuView.display.rotation)
+//            .build()
 
         val cameraSelector = CameraSelector.Builder()
             .requireLensFacing(viewModel.lensFacing.value ?: CameraSelector.LENS_FACING_BACK)
@@ -418,7 +692,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             .setTargetRotation(binding.viewFinder.display.rotation)
             .build()
 
-        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(requireContext())) { imageProxy ->
+        imageAnalysis?.setAnalyzer(ContextCompat.getMainExecutor(requireContext())) { imageProxy ->
             val bitmap = imageProxy.toBitmap()
             // Tính toán độ xoay chính xác dựa trên hướng thiết bị và hướng camera
             val rotation = when {
@@ -478,8 +752,18 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
 
+                    // Xử lý bitmap trước khi áp dụng filter
+                    val processedBitmap = if (viewModel.lensFacing.value == CameraSelector.LENS_FACING_FRONT) {
+                        // Nếu là camera trước, lật ảnh một lần để khắc phục lỗi lật ngược
+                        val matrix = Matrix()
+                        matrix.preScale(-1f, 1f)
+                        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                    } else {
+                        bitmap
+                    }
+
                     val filteredBitmap = filterManager.processImage(
-                        bitmap,
+                        processedBitmap,
                         viewModel.currentFilter.value ?: CameraFilter.ORIGINAL
                     )
 
@@ -533,10 +817,12 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
         val matrix = Matrix()
         matrix.postRotate(degrees)
+
         // Lật ngang cho camera trước
         if (viewModel.lensFacing.value == CameraSelector.LENS_FACING_FRONT) {
             matrix.postScale(-1f, 1f)
         }
+
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
@@ -545,8 +831,32 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             val timestamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault()).format(Date())
             val filename = "IMG_$timestamp.jpg"
 
-            val croppedBitmap =
-                cropToAspectRatio(bitmap, viewModel.aspectRatio.value ?: "3:4")
+            // Xử lý ảnh dựa trên hướng thiết bị và loại camera
+            val processedBitmap = when {
+                // Nếu đang dùng camera trước, cần xử lý đặc biệt để không bị lật ngược
+                viewModel.lensFacing.value == CameraSelector.LENS_FACING_FRONT -> {
+                    // Nếu thiết bị đang nằm ngang
+                    if (deviceOrientation == 90 || deviceOrientation == 270) {
+                        val matrix = Matrix()
+                        // Xoay ảnh theo hướng ngang nhưng không lật ngang
+                        matrix.postRotate(90f)
+                        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                    } else {
+                        // Nếu thiết bị đang đứng, giữ nguyên ảnh (không lật ngang)
+                        bitmap
+                    }
+                }
+                // Nếu đang dùng camera sau và thiết bị nằm ngang
+                deviceOrientation == 90 || deviceOrientation == 270 -> {
+                    val matrix = Matrix()
+                    matrix.postRotate(90f)
+                    Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                }
+                // Các trường hợp còn lại, giữ nguyên ảnh
+                else -> bitmap
+            }
+
+            val croppedBitmap = cropToAspectRatio(processedBitmap, viewModel.aspectRatio.value ?: "3:4")
 
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
@@ -659,7 +969,6 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
     }
 
-    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -681,11 +990,24 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     override fun onStart() {
         super.onStart()
         restartCamera()
+        if (::orientationEventListener.isInitialized) {
+            orientationEventListener.enable()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (::orientationEventListener.isInitialized) {
+            orientationEventListener.disable()
+        }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         cameraExecutor?.shutdown()
         timer?.cancel()
+        if (::orientationEventListener.isInitialized) {
+            orientationEventListener.disable()
+        }
     }
 }
