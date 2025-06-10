@@ -47,18 +47,18 @@ enum class CameraFilter {
 
             COMIC -> {
                 GPUImageFilterGroup().apply {
-                    // Tăng độ tương phản cho viền sắc nét
+                    // Increase contrast for sharper edges
                     addFilter(GPUImageContrastFilter(1.7f))
 
-                    // Tăng độ bão hòa màu
+                    // Increase color saturation
                     addFilter(GPUImageSaturationFilter(1.5f))
 
                     addFilter(GPUImageToonFilter().apply {
-                        setThreshold(0.15f)        // Giảm ngưỡng để phát hiện viền tốt hơn
-                        setQuantizationLevels(10.0f) // Tăng mức để màu mịn hơn
+                        setThreshold(0.15f)        // Lower threshold for better edge detection
+                        setQuantizationLevels(10.0f) // Increase levels for smoother colors
                     })
 
-                    // Ma trận màu để làm sắc nét
+                    // Color matrix for sharpening
                     addFilter(
                         GPUImageColorMatrixFilter(
                             1.2f, floatArrayOf(

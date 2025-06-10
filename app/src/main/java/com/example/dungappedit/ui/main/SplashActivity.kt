@@ -16,10 +16,10 @@ class SplashActivity : AppCompatActivity() {
         binding = ActivitySplashBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Delay 2 giây rồi mở MainActivity
+        // Delay 2 seconds then open SelectionActivity
         Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
-            finish() // đóng SplashActivity để không quay lại được bằng nút Back
-        }, 2000) // 2000 ms = 2 giây
+            startActivity(Intent(this, SelectionActivity::class.java))
+            finish() // close SplashActivity to prevent returning with Back button
+        }, 2000) // 2000 ms = 2 seconds
     }
 }

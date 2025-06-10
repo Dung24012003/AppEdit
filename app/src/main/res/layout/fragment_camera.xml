@@ -22,11 +22,11 @@
             android:layout_height="match_parent"
             android:scaleType="fitCenter" />
 
-        <jp.co.cyberagent.android.gpuimage.GPUImageView
-            android:id="@+id/gpuView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop" />
+            <jp.co.cyberagent.android.gpuimage.GPUImageView
+                android:id="@+id/gpuView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
 
         <com.example.dungappedit.ui.camera.GridOverlayView
             android:id="@+id/gridOverlay"

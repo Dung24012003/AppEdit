@@ -26,7 +26,7 @@ class FilterTabAdapter(private val context: Context) {
     fun setupFilterTabs(tabLayout: TabLayout, onFilterSelected: (CameraFilter) -> Unit) {
         tabLayout.removeAllTabs()
 
-        // Vô hiệu hóa chức năng kéo của TabLayout
+        // Disable TabLayout dragging function
         tabLayout.touchables.forEach { it.isClickable = true }
         tabLayout.setScrollPosition(0, 0f, false)
         tabLayout.isHorizontalScrollBarEnabled = false
@@ -38,14 +38,14 @@ class FilterTabAdapter(private val context: Context) {
             tabLayout.addTab(tab)
         }
 
-        // Thêm các tab đệm để căn giữa tab đầu tiên
+        // Add padding tabs to center the first tab
         addPaddingTabs(tabLayout)
         val paddingTabsCount = Math.ceil(
             (context.resources.displayMetrics.widthPixels /
                     (2 * context.resources.displayMetrics.density * 80)).toDouble()
         ).toInt()
 
-        // Mặc định chọn tab đầu tiên (Original/Gốc)
+        // Default select first tab (Original)
         if (tabLayout.tabCount > paddingTabsCount) {
             val originalTabPosition = paddingTabsCount
             currentSelectedTab = tabLayout.getTabAt(originalTabPosition)
@@ -60,7 +60,7 @@ class FilterTabAdapter(private val context: Context) {
                 val tabWidth = context.resources.displayMetrics.density * 80
                 val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
-                // Xử lý tab đệm
+                // Handle padding tabs
                 if (tab.position < paddingTabsCount || tab.position >= tabLayout.tabCount - paddingTabsCount) {
                     val closestRealTab = if (tab.position < paddingTabsCount) {
                         tabLayout.getTabAt(paddingTabsCount)
@@ -118,26 +118,26 @@ class FilterTabAdapter(private val context: Context) {
             val targetScrollX = tabView.left - (screenWidth / 2) + tabCenter
 
             tabLayout.post {
-                // Sử dụng smoothScrollTo thay vì scrollTo để có animation mượt mà
+                // Use smoothScrollTo instead of scrollTo for smooth animation
                 tabLayout.smoothScrollTo(targetScrollX, 0)
             }
         }
     }
 
     private fun addPaddingTabs(tabLayout: TabLayout) {
-        // Thêm tab đệm để các tab đầu/cuối có thể đạt đến trung tâm
+        // Add padding tabs so that first/last tabs can reach the center
         val screenWidth = context.resources.displayMetrics.widthPixels
         val tabWidth = context.resources.displayMetrics.density * 80
         val paddingTabsNeeded = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
-        // Thêm tab đệm ở đầu
+        // Add padding tabs at the beginning
         for (i in 0 until paddingTabsNeeded) {
             val paddingTab = tabLayout.newTab()
             paddingTab.customView = createPaddingView()
             tabLayout.addTab(paddingTab, 0)
         }
 
-        // Thêm tab đệm ở cuối
+        // Add padding tabs at the end
         for (i in 0 until paddingTabsNeeded) {
             val paddingTab = tabLayout.newTab()
             paddingTab.customView = createPaddingView()
@@ -147,7 +147,7 @@ class FilterTabAdapter(private val context: Context) {
 
     private fun createPaddingView(): View {
         val view = LayoutInflater.from(context).inflate(R.layout.item_filter_tab, null)
-        // Làm cho view vô hình nhưng giữ nguyên kích thước
+        // Make the view invisible but maintain its size
         view.alpha = 0f
         return view
     }

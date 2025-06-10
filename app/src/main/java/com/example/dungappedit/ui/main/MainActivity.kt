@@ -14,8 +14,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
 
-        supportFragmentManager.beginTransaction()
-            .replace(binding.fragmentContainer.id, CameraFragment())
-            .commit()
+        // Check if we should open the camera fragment
+        val openCamera = intent.getBooleanExtra("OPEN_CAMERA", false)
+        
+        if (openCamera) {
+            supportFragmentManager.beginTransaction()
+                .replace(binding.fragmentContainer.id, CameraFragment())
+                .commit()
+        }
     }
 }
