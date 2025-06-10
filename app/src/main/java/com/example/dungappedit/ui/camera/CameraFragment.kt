@@ -1,15 +1,16 @@
 package com.example.dungappedit.ui.camera
 
 import android.Manifest
-import android.annotation.SuppressLint
+import android.content.ContentUris
 import android.content.ContentValues
-import android.content.pm.PackageManager
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -19,18 +20,20 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
+import android.util.Size
 import android.view.MotionEvent
 import android.view.OrientationEventListener
 import android.view.ScaleGestureDetector
 import android.view.Surface
 import android.view.View
-import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
@@ -43,12 +46,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.dungappedit.R
 import com.example.dungappedit.databinding.FragmentCameraBinding
 import com.example.dungappedit.ui.camera.filter.CameraFilter
 import com.example.dungappedit.ui.camera.filter.CameraFilterManager
 import com.example.dungappedit.ui.camera.filter.FilterTabAdapter
+import com.example.dungappedit.ui.edit.EditImageActivity
+import com.example.dungappedit.utils.PermissionUtils
 import com.google.android.material.tabs.TabLayout
 import jp.co.cyberagent.android.gpuimage.GPUImageView
 import kotlinx.coroutines.Dispatchers
@@ -56,18 +62,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.pow
 
 class CameraFragment : Fragment(R.layout.fragment_camera) {
 
     private lateinit var binding: FragmentCameraBinding
     private val viewModel: CameraViewModel by viewModels()
-    private var isTorchOn = false
+    //private var isTorchOn = false
 
     private val aspectRatios = listOf("3:4", "9:16", "1:1", "Full")
     private val timerOptions = listOf("0", "3", "5", "10")
@@ -77,10 +87,11 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     private var imageCapture: ImageCapture? = null
 
     private var camera: Camera? = null
-    private var lensFacing = CameraSelector.LENS_FACING_BACK
+    //private var lensFacing = CameraSelector.LENS_FACING_BACK
 
     private var timer: CountDownTimer? = null
-    private var isGridVisible = false
+
+    //private var isGridVisible = false
     private var scaleGestureDetector: ScaleGestureDetector? = null
     private var isZooming = false
 
@@ -92,31 +103,84 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     private lateinit var orientationEventListener: OrientationEventListener
 
     companion object {
-        private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                arrayOf(
-                    Manifest.permission.CAMERA,
-                    Manifest.permission.READ_MEDIA_IMAGES
+        // Constants can be added here if needed in the future
+    }
+
+    // Image picker result launcher
+    private val pickImage = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            // Start EditImageActivity with the selected image URI
+            val intent = Intent(requireContext(), EditImageActivity::class.java)
+            intent.putExtra(EditImageActivity.EXTRA_IMAGE_URI, uri)
+            startActivity(intent)
+        }
+    }
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.entries.all { it.value }
+        if (granted) {
+            openImagePicker()
+        } else {
+            // Check if user has permanently denied permission
+            val permissionToCheck = PermissionUtils.getStoragePermission()
+
+            if (PermissionUtils.shouldShowSettingsDialog(this, permissionToCheck)) {
+                PermissionUtils.showSettingsDialog(
+                    this, message = "Storage permission is required to access your images"
                 )
             } else {
-                arrayOf(
-                    Manifest.permission.CAMERA,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
+                Toast.makeText(requireContext(), "Permission denied", Toast.LENGTH_SHORT).show()
             }
+        }
     }
+
+    private val requestCameraPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.entries.all { it.value }
+        if (granted) {
+            startCamera()
+        } else {
+            // Check if user has permanently denied camera permission
+            if (PermissionUtils.shouldShowSettingsDialog(this, Manifest.permission.CAMERA)) {
+                PermissionUtils.showSettingsDialog(
+                    this, message = "Camera permission is required for this feature"
+                )
+            } else {
+                Toast.makeText(requireContext(), "Camera permission denied", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+    }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentCameraBinding.bind(view)
 
+        // Setup all UI components first
         setupViews()
         setupObservers()
         setupListeners()
-        setupCamera()
-        setupOrientationListener()
+
+        // Check permissions before setting up camera
+        if (PermissionUtils.hasCameraPermissions(requireContext())) {
+            setupCamera()
+            setupOrientationListener()
+            // Load most recent photo if we have permission
+            loadMostRecentPhoto()
+        } else {
+            // Permission check should be handled by the SelectionActivity
+            // If we somehow get here without permissions, go back to selection screen
+            requireActivity().onBackPressedDispatcher.onBackPressed()
+
+        }
     }
+
 
     private fun setupOrientationListener() {
         orientationEventListener = object : OrientationEventListener(requireContext()) {
@@ -126,8 +190,8 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                 // Chuyển đổi orientation thành một trong 4 hướng chính: 0, 90, 180, 270
                 val rotation = when {
                     orientation <= 45 || orientation > 315 -> Surface.ROTATION_0
-                    orientation > 45 && orientation <= 135 -> Surface.ROTATION_90
-                    orientation > 135 && orientation <= 225 -> Surface.ROTATION_180
+                    orientation <= 135 -> Surface.ROTATION_90
+                    orientation <= 225 -> Surface.ROTATION_180
                     else -> Surface.ROTATION_270
                 }
 
@@ -149,9 +213,9 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     }
 
     private fun setupViews() {
+        // Initialize scale gesture detector with improved handling
         scaleGestureDetector = ScaleGestureDetector(
-            requireContext(),
-            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
                     isZooming = true
                     return true
@@ -187,7 +251,8 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         // Tăng kích thước vùng chạm của SeekBar để dễ kéo hơn
         binding.brightnessSeekBar.setPadding(0, 30, 0, 30)
 
-        binding.brightnessSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        binding.brightnessSeekBar.setOnSeekBarChangeListener(object :
+            SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     viewModel.setBrightnessLevel(progress)
@@ -209,7 +274,9 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         binding.btnResetBrightness.setOnClickListener {
             viewModel.resetBrightnessLevel()
             // Hiển thị thông báo nhỏ
-            Toast.makeText(requireContext(), "Đã đặt lại độ sáng về mức mặc định", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(), "Đã đặt lại độ sáng về mức mặc định", Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -271,10 +338,10 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                         // Điều chỉnh đường cong để tối hơn ở phía tối và sáng hơn ở phía sáng
                         val adjustedLevel = if (normalizedLevel < 0) {
                             // Phía tối: tăng cường độ tối bằng cách sử dụng mũ nhỏ hơn
-                            -Math.pow(Math.abs(normalizedLevel).toDouble(), 0.8)
+                            -abs(normalizedLevel).toDouble().pow(0.8)
                         } else {
                             // Phía sáng: giữ nguyên đường cong
-                            Math.pow(normalizedLevel.toDouble(), 1.2)
+                            normalizedLevel.toDouble().pow(1.2)
                         }
 
                         val exposureValue = midPoint + (adjustedLevel * effectiveRange / 2).toInt()
@@ -282,7 +349,10 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                         // Đảm bảo giá trị nằm trong phạm vi cho phép
                         val clampedValue = exposureValue.toInt().coerceIn(minValue, maxValue)
 
-                        Log.d("CameraFragment", "Độ sáng: $level, ExposureValue: $clampedValue (phạm vi: $minValue đến $maxValue)")
+                        Log.d(
+                            "CameraFragment",
+                            "Độ sáng: $level, ExposureValue: $clampedValue (phạm vi: $minValue đến $maxValue)"
+                        )
                         cameraControl.setExposureCompensationIndex(clampedValue)
                     }
                 } catch (e: Exception) {
@@ -292,30 +362,40 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+    //@SuppressLint("ClickableViewAccessibility")
     private fun setupListeners() {
         // Set touch listener on the root container to handle camera interactions
-        binding.previewContainer.setOnTouchListener { _, event ->
+        // Create a custom touch listener that properly handles performClick
+        binding.previewContainer.apply {
+            // Set click listener first to ensure performClick is implemented
+            setOnClickListener {
+                // Handle click events if needed
+            }
 
-            viewModel.toggleTimerRatioContainerAndBrightnessControl()
+            // Then set the touch listener
+            setOnTouchListener { view, event ->
+                viewModel.toggleTimerRatioContainerAndBrightnessControl()
 
-            scaleGestureDetector!!.onTouchEvent(event)
-            if (isZooming) return@setOnTouchListener true
+                scaleGestureDetector!!.onTouchEvent(event)
+                if (isZooming) return@setOnTouchListener true
 
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> true
-                MotionEvent.ACTION_UP -> {
-                    val factory = binding.viewFinder.meteringPointFactory
-                    val point = factory.createPoint(event.x, event.y)
-                    val action = FocusMeteringAction.Builder(point)
-                        .setAutoCancelDuration(3, TimeUnit.SECONDS)
-                        .build()
-                    camera?.cameraControl?.startFocusAndMetering(action)
-                    showFocus(event.x, event.y)
-                    true
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> true
+                    MotionEvent.ACTION_UP -> {
+                        val factory = binding.viewFinder.meteringPointFactory
+                        val point = factory.createPoint(event.x, event.y)
+                        val action = FocusMeteringAction.Builder(point)
+                            .setAutoCancelDuration(3, TimeUnit.SECONDS).build()
+                        camera?.cameraControl?.startFocusAndMetering(action)
+                        showFocus(event.x, event.y)
+
+                        // Call performClick for accessibility
+                        view.performClick()
+                        true
+                    }
+
+                    else -> false
                 }
-
-                else -> false
             }
         }
 
@@ -341,6 +421,14 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
 
         binding.imgBtnBrightness.setOnClickListener {
             viewModel.toggleBrightnessControl()
+        }
+
+        binding.imgBtnAlbum.setOnClickListener {
+            if (PermissionUtils.hasStoragePermissions(requireContext())) {
+                openImagePicker()
+            } else {
+                PermissionUtils.requestStoragePermissions(this, requestPermissionLauncher)
+            }
         }
 
         // Observe timer and ratio visibility from ViewModel
@@ -376,14 +464,14 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     }
 
     private fun setupCamera() {
-        if (allPermissionsGranted()) {
+        if (PermissionUtils.hasCameraPermissions(requireContext())) {
             startCamera()
         } else {
-            requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
+            PermissionUtils.requestCameraPermissions(this, requestCameraPermissionsLauncher)
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+    //@SuppressLint("ClickableViewAccessibility")
     private fun setupTabs() {
         val filterTabAdapter = FilterTabAdapter(requireContext())
         filterTabAdapter.setupFilterTabs(binding.tabFilter) { filter ->
@@ -394,7 +482,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         binding.tabFilter.post {
             val screenWidth = resources.displayMetrics.widthPixels
             val tabWidth = resources.displayMetrics.density * 80
-            val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+            val paddingTabsCount = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
             val originalTabPosition = paddingTabsCount
             val originalTab = binding.tabFilter.getTabAt(originalTabPosition)
@@ -417,25 +505,38 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                 handler.postDelayed(detectCenteredRunnable, 50)
             }
 
-            binding.tabFilter.setOnTouchListener { v, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        handler.removeCallbacks(flingRunnable)
-                        flingRunnable = Runnable {
-                            val scrollX = binding.tabFilter.scrollX
-                            val closestTab = findClosestTabToCenter(scrollX)
-                            closestTab?.let { tab ->
-                                val tabView = tab.view
-                                val tabCenter = tabView.width / 2
-                                val targetScrollX = tabView.left - (screenWidth / 2) + tabCenter
-                                binding.tabFilter.scrollTo(targetScrollX, 0)
-                                tab.select()
+            binding.tabFilter.apply {
+                // Set click listener first to ensure performClick is implemented
+                setOnClickListener {
+                    // The TabLayout already handles clicks internally
+                }
+
+                // Then set the touch listener
+                setOnTouchListener { v, event ->
+                    when (event.action) {
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            handler.removeCallbacks(flingRunnable)
+                            flingRunnable = Runnable {
+                                val scrollX = binding.tabFilter.scrollX
+                                val closestTab = findClosestTabToCenter(scrollX)
+                                closestTab?.let { tab ->
+                                    val tabView = tab.view
+                                    val tabCenter = tabView.width / 2
+                                    val targetScrollX = tabView.left - (screenWidth / 2) + tabCenter
+                                    binding.tabFilter.scrollTo(targetScrollX, 0)
+                                    tab.select()
+                                }
+                            }
+                            handler.postDelayed(flingRunnable, 150)
+
+                            // Call performClick for accessibility when the touch is released
+                            if (event.action == MotionEvent.ACTION_UP) {
+                                v.performClick()
                             }
                         }
-                        handler.postDelayed(flingRunnable, 150)
                     }
+                    false // Don't consume the event
                 }
-                false // Không tiêu thụ sự kiện
             }
         }
     }
@@ -451,7 +552,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
 
         val screenWidth = resources.displayMetrics.widthPixels
         val tabWidth = resources.displayMetrics.density * 80
-        val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+        val paddingTabsCount = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
         val startIndex = paddingTabsCount
         val endIndex = binding.tabFilter.tabCount - paddingTabsCount
@@ -464,7 +565,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             val tabCenter = tabView.left + tabView.width / 2 - scrollX
 
             // Tính khoảng cách từ trung tâm màn hình
-            val distance = Math.abs(screenCenter - tabCenter)
+            val distance = abs(screenCenter - tabCenter)
 
             // Cập nhật tab gần nhất nếu tab này gần hơn
             if (distance < minDistance) {
@@ -483,7 +584,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
 
         val screenWidth = resources.displayMetrics.widthPixels
         val tabWidth = resources.displayMetrics.density * 80
-        val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+        val paddingTabsCount = ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
 
         val startIndex = paddingTabsCount
         val endIndex = binding.tabFilter.tabCount - paddingTabsCount
@@ -492,7 +593,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             val tab = binding.tabFilter.getTabAt(i) ?: continue
             val tabView = tab.view
             val tabCenter = tabView.left + tabView.width / 2 - scrollX
-            val distance = Math.abs(screenCenter - tabCenter)
+            val distance = abs(screenCenter - tabCenter)
 
             if (distance < minDistance) {
                 minDistance = distance
@@ -507,7 +608,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             val tabView = tab.view
             val threshold = tabView.width * 0.4 // 40% chiều rộng tab để chọn mượt mà hơn
             val tabCenter = tabView.left + tabView.width / 2 - scrollX
-            val distance = Math.abs(screenCenter - tabCenter)
+            val distance = abs(screenCenter - tabCenter)
 
             if (distance <= threshold && binding.tabFilter.selectedTabPosition != tab.position) {
                 tab.select()
@@ -634,18 +735,9 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
 
             // Hiệu ứng khi chọn tab
             if (isSelected) {
-                tabView.animate()
-                    .scaleX(1.05f)
-                    .scaleY(1.05f)
-                    .setDuration(150)
-                    .withEndAction {
-                        tabView.animate()
-                            .scaleX(1.0f)
-                            .scaleY(1.0f)
-                            .setDuration(100)
-                            .start()
-                    }
-                    .start()
+                tabView.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).withEndAction {
+                    tabView.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+                }.start()
             }
         } catch (e: Exception) {
             Log.e("CameraFragment", "Lỗi khi cập nhật giao diện tab: ${e.message}")
@@ -669,30 +761,22 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         val cameraProvider = cameraProvider ?: return
 
         val rotation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            requireContext().display?.rotation ?: Surface.ROTATION_0
+            requireContext().display.rotation //?: Surface.ROTATION_0
         } else {
-            @Suppress("DEPRECATION")
-            requireActivity().windowManager.defaultDisplay.rotation
+            @Suppress("DEPRECATION") requireActivity().windowManager.defaultDisplay.rotation
         }
 
-        val preview = Preview.Builder()
-            .setTargetRotation(rotation)
-            .build()
-
-//        val preview = Preview.Builder()
-//            .setTargetRotation(binding.gpuView.display.rotation)
-//            .build()
+        val preview = Preview.Builder().setTargetRotation(rotation).build()
 
         val cameraSelector = CameraSelector.Builder()
             .requireLensFacing(viewModel.lensFacing.value ?: CameraSelector.LENS_FACING_BACK)
             .build()
 
-        imageAnalysis = ImageAnalysis.Builder()
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .setTargetRotation(binding.viewFinder.display.rotation)
-            .build()
+        imageAnalysis =
+            ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setTargetRotation(binding.viewFinder.display.rotation).build()
 
-        imageAnalysis?.setAnalyzer(ContextCompat.getMainExecutor(requireContext())) { imageProxy ->
+        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(requireContext())) { imageProxy ->
             val bitmap = imageProxy.toBitmap()
             // Tính toán độ xoay chính xác dựa trên hướng thiết bị và hướng camera
             val rotation = when {
@@ -708,19 +792,13 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             imageProxy.close()
         }
 
-        imageCapture = ImageCapture.Builder()
-            .setTargetRotation(binding.viewFinder.display.rotation)
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-            .build()
+        imageCapture = ImageCapture.Builder().setTargetRotation(binding.viewFinder.display.rotation)
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build()
 
         try {
             cameraProvider.unbindAll()
             camera = cameraProvider.bindToLifecycle(
-                this,
-                cameraSelector,
-                preview,
-                imageAnalysis,
-                imageCapture
+                this, cameraSelector, preview, imageAnalysis, imageCapture
             )
             preview.setSurfaceProvider(binding.viewFinder.surfaceProvider)
         } catch (e: Exception) {
@@ -735,12 +813,10 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
         imageCapture.takePicture(
-            outputOptions,
-            cameraExecutor!!,
-            object : ImageCapture.OnImageSavedCallback {
+            outputOptions, cameraExecutor!!, object : ImageCapture.OnImageSavedCallback {
                 override fun onError(exc: ImageCaptureException) {
                     Log.e("CameraFragment", "Photo capture failed: ${exc.message}", exc)
-                    lifecycleScope.launchWhenResumed {
+                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                         Toast.makeText(
                             requireContext(),
                             "Chụp ảnh thất bại: ${exc.message}",
@@ -753,24 +829,25 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                     val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
 
                     // Xử lý bitmap trước khi áp dụng filter
-                    val processedBitmap = if (viewModel.lensFacing.value == CameraSelector.LENS_FACING_FRONT) {
-                        // Nếu là camera trước, lật ảnh một lần để khắc phục lỗi lật ngược
-                        val matrix = Matrix()
-                        matrix.preScale(-1f, 1f)
-                        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-                    } else {
-                        bitmap
-                    }
+                    val processedBitmap =
+                        if (viewModel.lensFacing.value == CameraSelector.LENS_FACING_FRONT) {
+                            // Nếu là camera trước, lật ảnh một lần để khắc phục lỗi lật ngược
+                            val matrix = Matrix()
+                            matrix.preScale(-1f, 1f)
+                            Bitmap.createBitmap(
+                                bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
+                            )
+                        } else {
+                            bitmap
+                        }
 
                     val filteredBitmap = filterManager.processImage(
-                        processedBitmap,
-                        viewModel.currentFilter.value ?: CameraFilter.ORIGINAL
+                        processedBitmap, viewModel.currentFilter.value ?: CameraFilter.ORIGINAL
                     )
 
                     saveImageToGallery(filteredBitmap)
                 }
-            }
-        )
+            })
     }
 
     private fun showFocus(x: Float, y: Float) {
@@ -782,18 +859,29 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             background = ContextCompat.getDrawable(requireContext(), R.drawable.showfocus)
         }
         binding.viewFinder.addView(focusView)
-        focusView.animate()
-            .scaleX(1.5f).scaleY(1.5f)
-            .alpha(0f)
-            .setDuration(600)
-            .withEndAction { binding.viewFinder.removeView(focusView) }
-            .start()
+        focusView.animate().scaleX(1.5f).scaleY(1.5f).alpha(0f).setDuration(600)
+            .withEndAction { binding.viewFinder.removeView(focusView) }.start()
     }
 
     private fun updatePreviewSize(ratio: String) {
-        val metrics = DisplayMetrics()
-        requireActivity().windowManager.defaultDisplay.getMetrics(metrics)
-        val screenWidth = metrics.widthPixels
+        val screenWidth: Int
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // API 30+: Sử dụng currentWindowMetrics
+            val windowMetrics = requireActivity().windowManager.currentWindowMetrics
+            val insets = windowMetrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.navigationBars() or WindowInsets.Type.statusBars()
+            )
+            val bounds = windowMetrics.bounds
+            screenWidth = bounds.width() - insets.left - insets.right
+        } else {
+            // API < 30: Sử dụng DisplayMetrics
+            val displayMetrics = DisplayMetrics()
+            @Suppress("DEPRECATION") requireActivity().windowManager.defaultDisplay.getMetrics(
+                displayMetrics
+            )
+            screenWidth = displayMetrics.widthPixels
+        }
 
         val height = when (ratio) {
             "3:4" -> screenWidth * 4 / 3
@@ -807,6 +895,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         layoutParams.height = if (ratio == "Full") 0 else height
         binding.previewContainer.layoutParams = layoutParams
     }
+
 
     private fun restartCamera() {
         cameraProvider?.unbindAll()
@@ -856,7 +945,8 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                 else -> bitmap
             }
 
-            val croppedBitmap = cropToAspectRatio(processedBitmap, viewModel.aspectRatio.value ?: "3:4")
+            val croppedBitmap =
+                cropToAspectRatio(processedBitmap, viewModel.aspectRatio.value ?: "3:4")
 
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
@@ -868,8 +958,7 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
             }
 
             val uri = requireContext().contentResolver.insert(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                contentValues
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues
             ) ?: return@launch
 
             try {
@@ -886,6 +975,8 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(requireContext(), "Ảnh đã lưu: $filename", Toast.LENGTH_SHORT)
                         .show()
+                    // Update the album button with the newly saved photo
+                    loadMostRecentPhoto()
                 }
             } catch (e: Exception) {
                 Log.e("CameraFragment", "Failed to save image", e)
@@ -965,24 +1056,81 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         return BitmapFactory.decodeByteArray(out.toByteArray(), 0, out.size())
     }
 
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
+    private fun openImagePicker() {
+        pickImage.launch("image/*")
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                startCamera()
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    "Cần cấp quyền để sử dụng camera",
-                    Toast.LENGTH_SHORT
-                ).show()
+    private fun loadMostRecentPhoto() {
+        // Check if we have storage permissions first
+        if (!PermissionUtils.hasStoragePermissions(requireContext())) {
+            return
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Query the MediaStore for the most recent photo
+                val projection = arrayOf(
+                    MediaStore.Images.Media._ID, MediaStore.Images.Media.DATE_ADDED
+                )
+
+                // Sort by date added, most recent first
+                val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+
+                val cursor = requireContext().contentResolver.query(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, null, null, sortOrder
+                )
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val idColumn = it.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+                        val id = it.getLong(idColumn)
+                        val imageUri = ContentUris.withAppendedId(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
+                        )
+
+                        val thumbnail: Bitmap? =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                try {
+                                    val thumbnailSize = Size(200, 200)
+                                    requireContext().contentResolver.loadThumbnail(
+                                        imageUri, thumbnailSize, null
+                                    )
+                                } catch (e: IOException) {
+                                    e.printStackTrace()
+                                    null
+                                }
+                            } else {
+                                // Với Android < 29: mở InputStream và tự resize ảnh (cắt ảnh nhỏ)
+                                try {
+                                    val inputStream =
+                                        requireContext().contentResolver.openInputStream(imageUri)
+                                    val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                                    inputStream?.close()
+                                    originalBitmap?.let {
+                                        Bitmap.createScaledBitmap(it, 200, 200, true)
+                                    }
+                                } catch (e: IOException) {
+                                    e.printStackTrace()
+                                    null
+                                }
+                            }
+
+                        // Cập nhật UI trên main thread
+                        withContext(Dispatchers.Main) {
+                            if (thumbnail != null) {
+                                binding.imgBtnAlbum.setImageBitmap(thumbnail)
+                            } else {
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Không thể tải ảnh thu nhỏ",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
+                }
+
+            } catch (e: Exception) {
+                Log.e("CameraFragment", "Error loading most recent photo: ${e.message}")
             }
         }
     }
@@ -993,6 +1141,8 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
         if (::orientationEventListener.isInitialized) {
             orientationEventListener.enable()
         }
+        // Load the most recent photo when returning to the app
+        loadMostRecentPhoto()
     }
 
     override fun onStop() {

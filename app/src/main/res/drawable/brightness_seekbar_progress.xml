@@ -2,16 +2,16 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
-            <corners android:radius="10dp" />
-            <size android:height="4dp" />
+            <corners android:radius="@dimen/distance_10dp" />
+            <size android:height="@dimen/distance_4dp" />
             <solid android:color="#80FFFFFF" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
         <scale android:scaleWidth="100%">
             <shape android:shape="rectangle">
-                <corners android:radius="10dp" />
-                <size android:height="4dp" />
+                <corners android:radius="@dimen/distance_10dp" />
+                <size android:height="@dimen/distance_4dp" />
                 <solid android:color="#FFFFFF" />
             </shape>
         </scale>

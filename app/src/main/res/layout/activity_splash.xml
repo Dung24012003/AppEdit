@@ -8,8 +8,8 @@
 
     <ImageView
         android:id="@+id/logoImage"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="@dimen/distance_150dp"
+        android:layout_height="@dimen/distance_150dp"
         android:background="@drawable/avatarappedit"
         android:contentDescription="@string/app_name"
         app:layout_constraintTop_toTopOf="parent"

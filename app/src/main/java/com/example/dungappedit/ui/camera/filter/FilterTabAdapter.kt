@@ -10,8 +10,11 @@ import android.widget.TextView
 import com.example.dungappedit.R
 import com.google.android.material.tabs.TabLayout
 import jp.co.cyberagent.android.gpuimage.GPUImage
+import kotlin.math.ceil
 
 class FilterTabAdapter(private val context: Context) {
+
+    private var tabLayoutRef: TabLayout? = null
 
     private val sampleBitmap: Bitmap by lazy {
         BitmapFactory.decodeResource(context.resources, R.drawable.itemfilter)
@@ -24,85 +27,71 @@ class FilterTabAdapter(private val context: Context) {
     private var currentSelectedTab: TabLayout.Tab? = null
 
     fun setupFilterTabs(tabLayout: TabLayout, onFilterSelected: (CameraFilter) -> Unit) {
+        tabLayoutRef = tabLayout
         tabLayout.removeAllTabs()
 
-        // Disable TabLayout dragging function
+        // Disable TabLayout dragging
         tabLayout.touchables.forEach { it.isClickable = true }
         tabLayout.setScrollPosition(0, 0f, false)
         tabLayout.isHorizontalScrollBarEnabled = false
 
-        CameraFilter.values().forEach { filter ->
+        CameraFilter.entries.forEach { filter ->
             val tab = tabLayout.newTab()
-            val customView = createTabView(filter)
-            tab.customView = customView
+            tab.customView = createTabView(filter)
             tabLayout.addTab(tab)
         }
 
         // Add padding tabs to center the first tab
-        addPaddingTabs(tabLayout)
-        val paddingTabsCount = Math.ceil(
-            (context.resources.displayMetrics.widthPixels /
-                    (2 * context.resources.displayMetrics.density * 80)).toDouble()
-        ).toInt()
+        addPaddingTabs()
+        val paddingTabsCount = getPaddingTabsCount()
 
         // Default select first tab (Original)
         if (tabLayout.tabCount > paddingTabsCount) {
-            val originalTabPosition = paddingTabsCount
-            currentSelectedTab = tabLayout.getTabAt(originalTabPosition)
+            val originalTab = tabLayout.getTabAt(paddingTabsCount)
+            currentSelectedTab = originalTab
             updateSelectedTab(currentSelectedTab)
             onFilterSelected(CameraFilter.ORIGINAL)
-            centerTabInView(tabLayout, currentSelectedTab)
+            centerTabInView(originalTab)
         }
 
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
-                val screenWidth = context.resources.displayMetrics.widthPixels
-                val tabWidth = context.resources.displayMetrics.density * 80
-                val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+                val paddingTabsCount = getPaddingTabsCount()
+                val totalTabs = tabLayout.tabCount
 
                 // Handle padding tabs
-                if (tab.position < paddingTabsCount || tab.position >= tabLayout.tabCount - paddingTabsCount) {
+                if (tab.position < paddingTabsCount || tab.position >= totalTabs - paddingTabsCount) {
                     val closestRealTab = if (tab.position < paddingTabsCount) {
                         tabLayout.getTabAt(paddingTabsCount)
                     } else {
-                        tabLayout.getTabAt(tabLayout.tabCount - paddingTabsCount - 1)
+                        tabLayout.getTabAt(totalTabs - paddingTabsCount - 1)
                     }
-                    closestRealTab?.let {
-                        if (it != tab) {
-                            it.select()
-                        }
-                    }
+                    closestRealTab?.takeIf { it != tab }?.select()
                     return
                 }
 
                 updateSelectedTab(tab)
-                val filterPosition = tab.position - paddingTabsCount
-                if (filterPosition >= 0 && filterPosition < CameraFilter.values().size) {
-                    val filter = CameraFilter.values()[filterPosition]
-                    onFilterSelected(filter)
+                val filterIndex = tab.position - paddingTabsCount
+                if (filterIndex in CameraFilter.entries.indices) {
+                    onFilterSelected(CameraFilter.entries[filterIndex])
                 }
                 currentSelectedTab = tab
-                centerTabInView(tabLayout, tab)
+                centerTabInView(tab)
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab?) {
-                tab?.customView?.let { view ->
-                    view.findViewById<View>(R.id.filter_border).visibility = View.GONE
-                }
+                tab?.customView?.findViewById<View>(R.id.filter_border)?.visibility = View.GONE
             }
 
             override fun onTabReselected(tab: TabLayout.Tab?) {
-                centerTabInView(tabLayout, tab)
+                centerTabInView(tab)
             }
         })
 
+        // Handle click manually for real tabs only
         for (i in 0 until tabLayout.tabCount) {
             val tab = tabLayout.getTabAt(i) ?: continue
-            val screenWidth = context.resources.displayMetrics.widthPixels
-            val tabWidth = context.resources.displayMetrics.density * 80
-            val paddingTabsCount = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
-
-            if (i >= paddingTabsCount && i < tabLayout.tabCount - paddingTabsCount) {
+            if (i in getPaddingTabsCount() until (tabLayout.tabCount - getPaddingTabsCount())) {
                 tab.view.setOnClickListener {
                     tab.select()
                 }
@@ -110,35 +99,25 @@ class FilterTabAdapter(private val context: Context) {
         }
     }
 
-    private fun centerTabInView(tabLayout: TabLayout, tab: TabLayout.Tab?) {
-        tab?.let {
-            val tabView = it.view
-            val screenWidth = context.resources.displayMetrics.widthPixels
-            val tabCenter = tabView.width / 2
-            val targetScrollX = tabView.left - (screenWidth / 2) + tabCenter
-
-            tabLayout.post {
-                // Use smoothScrollTo instead of scrollTo for smooth animation
-                tabLayout.smoothScrollTo(targetScrollX, 0)
-            }
-        }
-    }
-
-    private fun addPaddingTabs(tabLayout: TabLayout) {
-        // Add padding tabs so that first/last tabs can reach the center
+    private fun getPaddingTabsCount(): Int {
         val screenWidth = context.resources.displayMetrics.widthPixels
         val tabWidth = context.resources.displayMetrics.density * 80
-        val paddingTabsNeeded = Math.ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+        return ceil((screenWidth / (2 * tabWidth)).toDouble()).toInt()
+    }
 
-        // Add padding tabs at the beginning
-        for (i in 0 until paddingTabsNeeded) {
+    private fun addPaddingTabs() {
+        val tabLayout = tabLayoutRef ?: return
+        val paddingTabsNeeded = getPaddingTabsCount()
+
+        // Add to start
+        repeat(paddingTabsNeeded) {
             val paddingTab = tabLayout.newTab()
             paddingTab.customView = createPaddingView()
             tabLayout.addTab(paddingTab, 0)
         }
 
-        // Add padding tabs at the end
-        for (i in 0 until paddingTabsNeeded) {
+        // Add to end
+        repeat(paddingTabsNeeded) {
             val paddingTab = tabLayout.newTab()
             paddingTab.customView = createPaddingView()
             tabLayout.addTab(paddingTab)
@@ -146,33 +125,42 @@ class FilterTabAdapter(private val context: Context) {
     }
 
     private fun createPaddingView(): View {
-        val view = LayoutInflater.from(context).inflate(R.layout.item_filter_tab, null)
-        // Make the view invisible but maintain its size
+        val view =
+            LayoutInflater.from(context).inflate(R.layout.item_filter_tab, tabLayoutRef, false)
         view.alpha = 0f
         return view
     }
 
-    private fun updateSelectedTab(tab: TabLayout.Tab?) {
-        currentSelectedTab?.customView?.let { view ->
-            view.findViewById<View>(R.id.filter_border).visibility = View.GONE
-        }
+    private fun centerTabInView(tab: TabLayout.Tab?) {
+        val tabLayout = tabLayoutRef ?: return
+        tab?.let {
+            val tabView = it.view
+            val screenWidth = context.resources.displayMetrics.widthPixels
+            val tabCenter = tabView.width / 2
+            val targetScrollX = tabView.left - (screenWidth / 2) + tabCenter
 
-        tab?.customView?.let { view ->
-            view.findViewById<View>(R.id.filter_border).visibility = View.VISIBLE
+            tabLayout.post {
+                tabLayout.smoothScrollTo(targetScrollX, 0)
+            }
         }
     }
 
+    private fun updateSelectedTab(tab: TabLayout.Tab?) {
+        currentSelectedTab?.customView?.findViewById<View>(R.id.filter_border)?.visibility =
+            View.GONE
+        tab?.customView?.findViewById<View>(R.id.filter_border)?.visibility = View.VISIBLE
+    }
+
     private fun createTabView(filter: CameraFilter): View {
-        val view = LayoutInflater.from(context).inflate(R.layout.item_filter_tab, null)
+        val view =
+            LayoutInflater.from(context).inflate(R.layout.item_filter_tab, tabLayoutRef, false)
         val imageView = view.findViewById<ImageView>(R.id.filter_preview)
         val textView = view.findViewById<TextView>(R.id.filter_name)
         val borderView = view.findViewById<View>(R.id.filter_border)
 
         gpuImage.setImage(sampleBitmap)
         gpuImage.setFilter(filter.createFilter())
-        val filteredBitmap = gpuImage.bitmapWithFilterApplied
-
-        imageView.setImageBitmap(filteredBitmap)
+        imageView.setImageBitmap(gpuImage.bitmapWithFilterApplied)
         textView.text = getFilterName(filter)
         borderView.visibility = View.GONE
 
@@ -188,7 +176,7 @@ class FilterTabAdapter(private val context: Context) {
             CameraFilter.COOL -> "Lạnh"
             CameraFilter.COMIC -> "Truyện"
             CameraFilter.PENCIL -> "Vẽ"
-            CameraFilter.VIGNETTE -> "Bo gốc"
+            CameraFilter.VIGNETTE -> "Bo góc"
         }
     }
-} 
+}

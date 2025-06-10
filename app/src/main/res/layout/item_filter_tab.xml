@@ -5,20 +5,21 @@
     android:layout_height="wrap_content"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="@dimen/distance_8dp">
 
     <androidx.cardview.widget.CardView
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        app:cardCornerRadius="35dp"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="@android:color/transparent">
+        android:layout_width="@dimen/filter_preview_size"
+        android:layout_height="@dimen/filter_preview_size"
+        app:cardCornerRadius="@dimen/distance_corner_radius_35dp"
+        app:cardElevation="@dimen/distance_0dp"
+        app:cardBackgroundColor="@color/transparent">
 
         <ImageView
             android:id="@+id/filter_preview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop" />
+            android:scaleType="centerCrop"
+            android:contentDescription="@string/filter_normal" />
 
         <View
             android:id="@+id/filter_border"
@@ -32,8 +33,8 @@
         android:id="@+id/filter_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:textColor="@android:color/white"
-        android:textSize="12sp" />
+        android:layout_marginTop="@dimen/distance_4dp"
+        android:textColor="@color/white"
+        android:textSize="@dimen/size_12sp" />
 
 </LinearLayout>

@@ -1,5 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Material colors -->
+    <color name="indigo">#3F51B5</color>
+    <color name="green">#4CAF50</color>
+    <color name="amber">#FFD54F</color>
+    <color name="dark_gray">#2F2F2F</color>
+    
+    <!-- Transparent colors -->
+    <color name="transparent">#00000000</color>
+    <color name="semi_transparent_white_40">#40FFFFFF</color>
+    <color name="semi_transparent_white_80">#80FFFFFF</color>
+    <color name="semi_transparent_black_50">#80000000</color>
+    
+    <!-- Camera UI colors -->
+    <color name="camera_light_blue">#c7ede6</color>
+    <color name="camera_beige">#fdfcef</color>
+    <color name="camera_dark_gray">#472b29</color>
+    <color name="camera_gray_blue">#7c8ba2</color>
+    <color name="camera_light_gray">#efeddf</color>
+    <color name="camera_yellow">#f9c941</color>
+    
+    <!-- Filter colors -->
+    <color name="filter_red">#ee3e54</color>
+    <color name="filter_yellow">#f1bc19</color>
+    <color name="filter_light_yellow">#fce0a2</color>
+    <color name="filter_orange">#fbcd59</color>
+    <color name="filter_light_gray">#e1e0d8</color>
+    <color name="filter_dark_gray">#472b29</color>
+    <color name="filter_blue_gray">#7c8a9f</color>
+    <color name="filter_off_white">#ededeb</color>
 </resources>

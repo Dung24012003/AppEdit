@@ -39,7 +39,7 @@ class CameraViewModel : ViewModel() {
     }
 
     fun toggleFlash() {
-        _isFlashEnabled.value = !(_isFlashEnabled.value ?: false)
+        _isFlashEnabled.value = _isFlashEnabled.value != true
     }
 
     fun setFilter(filter: CameraFilter) {
@@ -56,13 +56,13 @@ class CameraViewModel : ViewModel() {
     }
 
     fun toggleGrid() {
-        _isGridVisible.value = !(_isGridVisible.value ?: false)
+        _isGridVisible.value = _isGridVisible.value != true
     }
 
     fun toggleTimerRatioContainer() {
-        _isTimerRatioContainerVisible.value = !(_isTimerRatioContainerVisible.value ?: false)
+        _isTimerRatioContainerVisible.value = _isTimerRatioContainerVisible.value != true
 
-        // Khi hiển thị container, ẩn các control khác
+        // When displaying the container, hide other controls
         if (_isTimerRatioContainerVisible.value == true) {
             _isBrightnessControlVisible.value = false
         }
@@ -73,9 +73,9 @@ class CameraViewModel : ViewModel() {
     }
 
     fun toggleBrightnessControl() {
-        _isBrightnessControlVisible.value = !(_isBrightnessControlVisible.value ?: false)
+        _isBrightnessControlVisible.value = _isBrightnessControlVisible.value != true
 
-        // Khi hiển thị brightness control, ẩn các control khác
+        // When displaying brightness control, hide other controls
         if (_isBrightnessControlVisible.value == true && _isTimerRatioContainerVisible.value == true) {
             _isTimerRatioContainerVisible.value = false
         }
@@ -90,9 +90,10 @@ class CameraViewModel : ViewModel() {
     }
 
     fun toggleTimerRatioContainerAndBrightnessControl() {
-        when{
+        when {
             _isBrightnessControlVisible.value == true -> _isBrightnessControlVisible.value = false
-            _isTimerRatioContainerVisible.value == true -> _isTimerRatioContainerVisible.value = false
+            _isTimerRatioContainerVisible.value == true -> _isTimerRatioContainerVisible.value =
+                false
         }
     }
 }

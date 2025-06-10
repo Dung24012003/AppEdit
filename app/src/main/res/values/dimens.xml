@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Distance dimensions (for margins, paddings, etc.) -->
+    <dimen name="distance_0dp">0dp</dimen>
+    <dimen name="distance_1dp">1dp</dimen>
+    <dimen name="distance_2dp">2dp</dimen>
+    <dimen name="distance_4dp">4dp</dimen>
+    <dimen name="distance_8dp">8dp</dimen>
+    <dimen name="distance_10dp">10dp</dimen>
+    <dimen name="distance_12dp">12dp</dimen>
+    <dimen name="distance_15dp">15dp</dimen>
+    <dimen name="distance_16dp">16dp</dimen>
+    <dimen name="distance_20dp">20dp</dimen>
+    <dimen name="distance_24dp">24dp</dimen>
+    <dimen name="distance_28dp">28dp</dimen>
+    <dimen name="distance_29dp">29dp</dimen>
+    <dimen name="distance_30dp">30dp</dimen>
+    <dimen name="distance_32dp">32dp</dimen>
+    <dimen name="distance_35dp">35dp</dimen>
+    <dimen name="distance_48dp">48dp</dimen>
+    <dimen name="distance_50dp">50dp</dimen>
+    <dimen name="distance_56dp">56dp</dimen>
+    <dimen name="distance_64dp">64dp</dimen>
+    <dimen name="distance_72dp">72dp</dimen>
+    <dimen name="distance_80dp">80dp</dimen>
+    <dimen name="distance_100dp">100dp</dimen>
+    <dimen name="distance_120dp">120dp</dimen>
+    <dimen name="distance_150dp">150dp</dimen>
+    <dimen name="distance_200dp">200dp</dimen>
+    <dimen name="distance_512dp">512dp</dimen>
+    
+    <!-- Size dimensions (for text sizes) -->
+    <dimen name="size_12sp">12sp</dimen>
+    <dimen name="size_14sp">14sp</dimen>
+    <dimen name="size_16sp">16sp</dimen>
+    <dimen name="size_20sp">20sp</dimen>
+    <dimen name="size_22sp">22sp</dimen>
+    <dimen name="size_24sp">24sp</dimen>
+    <dimen name="size_28sp">28sp</dimen>
+    
+    <!-- Component specific dimensions -->
+    <dimen name="filter_preview_size">56dp</dimen>
+    <dimen name="tab_min_width">80dp</dimen>
+    <dimen name="card_corner_radius">12dp</dimen>
+    <dimen name="icon_size">48dp</dimen>
+    <dimen name="distance_elevation_2dp">2dp</dimen>
+    <dimen name="distance_corner_radius_35dp">35dp</dimen>
+    <dimen name="distance_corner_radius_8dp">8dp</dimen>
+    <dimen name="distance_corner_radius_10dp">10dp</dimen>
+    <dimen name="distance_corner_radius_16dp">16dp</dimen>
+    <dimen name="distance_seekbar_height_4dp">4dp</dimen>
+</resources>

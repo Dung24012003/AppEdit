@@ -2,10 +2,8 @@ package com.example.dungappedit.ui.camera.filter
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import androidx.core.view.drawToBitmap
 import jp.co.cyberagent.android.gpuimage.GPUImage
 import jp.co.cyberagent.android.gpuimage.GPUImageView
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 
 class CameraFilterManager(private val gpuView: GPUImageView) {
     fun applyFilter(filter: CameraFilter) {
@@ -36,7 +34,7 @@ class CameraFilterManager(private val gpuView: GPUImageView) {
         }
     }
 
-    fun getCurrentFilter(): GPUImageFilter? = gpuView.filter
+    //fun getCurrentFilter(): GPUImageFilter? = gpuView.filter
 
-    fun getCurrentBitmap(): Bitmap? = gpuView.drawToBitmap()
+    //fun getCurrentBitmap(): Bitmap? = gpuView.drawToBitmap()
 }
