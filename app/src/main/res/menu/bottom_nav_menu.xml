@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/item_frame"
+        android:icon="@drawable/album"
+        android:title="Frame" />
+    <item
+        android:id="@+id/item_crop"
+        android:icon="@drawable/grid"
+        android:title="Crop" />
+    <item
+        android:id="@+id/item_filter"
+        android:icon="@drawable/setting"
+        android:title="Filter" />
+    <item
+        android:id="@+id/item_draw"
+        android:icon="@drawable/pen"
+        android:title="Draw" />
+    <item
+        android:id="@+id/item_sticker"
+        android:icon="@drawable/brightness"
+        android:title="Sticker" />
+    <item
+        android:id="@+id/item_text"
+        android:icon="@drawable/text"
+        android:title="Text" />
+    <item
+        android:id="@+id/item_save"
+        android:icon="@drawable/save"
+        android:title="Save" />
+</menu>

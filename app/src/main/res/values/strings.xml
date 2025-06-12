@@ -41,4 +41,58 @@
     <string name="filter_sepia">Sepia</string>
     <string name="filter_pencil">Pencil</string>
     <string name="filter_vignette">Vignette</string>
+
+
+    <string name="title_dr">Draw</string>
+    <string name="title_al">Album</string>
+    <string name="title_sa">Save</string>
+
+    <string name="title_bo">Border</string>
+    <string name="title_pe">Pen</string>
+    <string name="title_ch_co">Color Paint</string>
+    <string name="title_er">Eraser</string>
+    <string name="title_ch_img">Picture</string>
+    <string name="title_hue">Hue</string>
+
+    <string name="desc_show_detail">Image Preview</string>
+    <string name="desc_show_item">List Item Image</string>
+    <string name="desc_draw">draw freely</string>
+    <string name="desc_icon">add icon</string>
+    <string name="desc_text">add text</string>
+
+    <string name="toast_save">Saved successfully</string>
+    <string name="toast_color">Color selected</string>
+    <string name="toast_frame_applied">Frame applied</string>
+    <string name="toast_crop_success">Cắt ảnh thành công</string>
+    <string name="toast_reset_image">Đã khôi phục ảnh gốc</string>
+    <string name="toast_no_image">Không có ảnh để khôi phục</string>
+
+    <!-- Crop options -->
+    <string name="crop_ratio_title">Chọn Tỷ Lệ Cắt</string>
+    <string name="crop_1_1">1:1</string>
+    <string name="crop_3_4">3:4</string>
+    <string name="crop_6_9">9:16</string>
+    <string name="crop_full">Tự Do</string>
+    <string name="crop_reset">Khôi Phục</string>
+    <string name="crop_title">Cắt Ảnh</string>
+
+    <!-- Text editor strings -->
+    <string name="text_editor_title">Chỉnh sửa văn bản</string>
+    <string name="text_editor_enter_text">Nhập văn bản</string>
+    <string name="text_editor_text_color">Màu chữ</string>
+    <string name="text_editor_text_size">Kích thước chữ</string>
+    <string name="text_editor_font">Phông chữ</string>
+    <string name="text_editor_stroke">Viền</string>
+    <string name="text_editor_enable_stroke">Bật viền</string>
+    <string name="text_editor_stroke_color">Màu viền</string>
+    <string name="text_editor_stroke_width">Độ dày viền</string>
+    <string name="text_editor_shadow">Bóng đổ</string>
+    <string name="text_editor_enable_shadow">Bật bóng đổ</string>
+    <string name="text_editor_shadow_color">Màu bóng đổ</string>
+    <string name="text_editor_shadow_radius">Độ mờ bóng</string>
+    <string name="text_editor_shadow_dx">Vị trí X bóng</string>
+    <string name="text_editor_shadow_dy">Vị trí Y bóng</string>
+    <string name="text_editor_apply">Áp dụng</string>
+    <string name="text_editor_cancel">Hủy bỏ</string>
+    <string name="text_editor_preview">Xem trước</string>
 </resources>

@@ -33,4 +33,8 @@
     <color name="filter_dark_gray">#472b29</color>
     <color name="filter_blue_gray">#7c8a9f</color>
     <color name="filter_off_white">#ededeb</color>
+
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
 </resources>

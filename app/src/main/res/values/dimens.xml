@@ -28,7 +28,7 @@
     <dimen name="distance_150dp">150dp</dimen>
     <dimen name="distance_200dp">200dp</dimen>
     <dimen name="distance_512dp">512dp</dimen>
-    
+
     <!-- Size dimensions (for text sizes) -->
     <dimen name="size_12sp">12sp</dimen>
     <dimen name="size_14sp">14sp</dimen>
@@ -37,7 +37,7 @@
     <dimen name="size_22sp">22sp</dimen>
     <dimen name="size_24sp">24sp</dimen>
     <dimen name="size_28sp">28sp</dimen>
-    
+
     <!-- Component specific dimensions -->
     <dimen name="filter_preview_size">56dp</dimen>
     <dimen name="tab_min_width">80dp</dimen>
@@ -49,4 +49,10 @@
     <dimen name="distance_corner_radius_10dp">10dp</dimen>
     <dimen name="distance_corner_radius_16dp">16dp</dimen>
     <dimen name="distance_seekbar_height_4dp">4dp</dimen>
+
+
+    <dimen name="size_50sp">50sp</dimen>
+    <dimen name="size_30sp">30sp</dimen>
+
+    <dimen name="distance_220dp">220dp</dimen>
 </resources>

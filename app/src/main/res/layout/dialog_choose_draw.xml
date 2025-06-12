@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/distance_24dp">
+
+    <ImageView
+        android:id="@+id/img_option1"
+        android:layout_width="@dimen/distance_100dp"
+        android:layout_height="@dimen/distance_100dp"
+        android:background="@color/white"
+        android:contentDescription="@string/desc_draw"
+        android:src="@drawable/scribble"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/img_option2"
+        android:layout_width="@dimen/distance_100dp"
+        android:layout_height="@dimen/distance_100dp"
+        android:background="@color/white"
+        android:contentDescription="@string/desc_icon"
+        android:src="@drawable/text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/img_option3"
+        android:layout_width="@dimen/distance_100dp"
+        android:layout_height="@dimen/distance_100dp"
+        android:background="@color/white"
+        android:contentDescription="@string/desc_text"
+        android:src="@drawable/stikcer6"
+        app:layout_constraintEnd_toStartOf="@id/img_option2"
+        app:layout_constraintStart_toEndOf="@+id/img_option1"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

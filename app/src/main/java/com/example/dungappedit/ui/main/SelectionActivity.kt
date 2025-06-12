@@ -13,8 +13,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.dungappedit.R
+import com.example.dungappedit.common.Constans
 import com.example.dungappedit.databinding.ActivitySelectionBinding
-import com.example.dungappedit.ui.edit.EditImageActivity
+import com.example.dungappedit.ui.edit.EditActivity
 
 class SelectionActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySelectionBinding
@@ -84,8 +85,8 @@ class SelectionActivity : AppCompatActivity() {
     ) { uri: Uri? ->
         uri?.let {
             // Start EditImageActivity with the selected image URI
-            val intent = Intent(this, EditImageActivity::class.java)
-            intent.putExtra(EditImageActivity.EXTRA_IMAGE_URI, uri)
+            val intent = Intent(this, EditActivity::class.java)
+            intent.putExtra(Constans.KEY_DATA_IMG, uri)
             startActivity(intent)
         }
     }

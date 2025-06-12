@@ -41,6 +41,9 @@ android {
 
 dependencies {
 
+    implementation ("com.github.yalantis:ucrop:2.2.8-native")
+    implementation ("com.github.Dhaval2404:ColorPicker:2.3")
+
     val camerax_version = "1.2.2"
 
     implementation ("androidx.camera:camera-core:${camerax_version}")

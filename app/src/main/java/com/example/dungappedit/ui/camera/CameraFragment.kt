@@ -49,11 +49,12 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.dungappedit.R
+import com.example.dungappedit.common.Constans
 import com.example.dungappedit.databinding.FragmentCameraBinding
 import com.example.dungappedit.ui.camera.filter.CameraFilter
 import com.example.dungappedit.ui.camera.filter.CameraFilterManager
 import com.example.dungappedit.ui.camera.filter.FilterTabAdapter
-import com.example.dungappedit.ui.edit.EditImageActivity
+import com.example.dungappedit.ui.edit.EditActivity
 import com.example.dungappedit.utils.PermissionUtils
 import com.google.android.material.tabs.TabLayout
 import jp.co.cyberagent.android.gpuimage.GPUImageView
@@ -112,8 +113,8 @@ class CameraFragment : Fragment(R.layout.fragment_camera) {
     ) { uri: Uri? ->
         uri?.let {
             // Start EditImageActivity with the selected image URI
-            val intent = Intent(requireContext(), EditImageActivity::class.java)
-            intent.putExtra(EditImageActivity.EXTRA_IMAGE_URI, uri)
+            val intent = Intent(requireContext(), EditActivity::class.java)
+            intent.putExtra(Constans.KEY_DATA_IMG, uri)
             startActivity(intent)
         }
     }
