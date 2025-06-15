@@ -1,51 +1,50 @@
 package com.example.dungappedit.ui.edit.tools
 
 import android.view.View
-import android.widget.Button
+import androidx.fragment.app.FragmentActivity
 import com.example.dungappedit.canvas.DrawOnImageView
 import com.example.dungappedit.model.MovableItem
-import com.example.dungappedit.ui.edit.text.TextEditor
+import com.example.dungappedit.model.TextStyle
+import com.example.dungappedit.ui.edit.text.TextEditorDialogFragment
 
 class TextToolManager(
-    private val drawView: DrawOnImageView,
-    private val textControls: View, // A layout containing the "Add Text" button
+    private val drawView: DrawOnImageView
 ) : BaseToolManager {
 
-    private val textEditor: TextEditor = TextEditor(drawView.context)
-
     override fun activate() {
-        textControls.visibility = View.VISIBLE
-        // Deactivate drawing when text tool is active to prevent conflicts
+        // Deactivate drawing to prevent conflicts
         drawView.enableDrawing(false)
+
+        // Show the text creation dialog immediately
+        val context = drawView.context
+        if (context is FragmentActivity) {
+            val dialog = TextEditorDialogFragment.newInstance(TextStyle()) { textStyle ->
+                drawView.addTextItem(textStyle.text, textStyle)
+            }
+            dialog.show(context.supportFragmentManager, "TextEditorDialog")
+        }
     }
 
     override fun deactivate() {
-        textControls.visibility = View.GONE
+        // No specific deactivation needed for controls as they are removed.
     }
 
     override fun isToolActive(): Boolean {
-        return textControls.visibility == View.VISIBLE
+        // The tool is active transiently, so we can return false.
+        return false
     }
 
     override fun applyChanges() {
         // Text changes are applied via the TextEditor dialog.
     }
 
-    fun setupListeners(addTextButton: Button) {
-        addTextButton.setOnClickListener {
-            createText()
-        }
-    }
-
-    private fun createText() {
-        textEditor.showCreateDialog { textStyle ->
-            drawView.addTextItem(textStyle.text, textStyle)
-        }
-    }
-
     fun editText(textItem: MovableItem.TextItem) {
-        textEditor.showEditDialog(textItem) { newTextStyle ->
-            drawView.updateTextItem(textItem, newTextStyle)
+        val context = drawView.context
+        if (context is FragmentActivity) {
+            val dialog = TextEditorDialogFragment.newInstance(textItem.textStyle ?: TextStyle()) { newTextStyle ->
+                drawView.updateTextItem(textItem, newTextStyle)
+            }
+            dialog.show(context.supportFragmentManager, "TextEditorDialog")
         }
     }
 } 

@@ -14,6 +14,8 @@ class DrawToolManager(
 ) : BaseToolManager {
 
     private var lastColor = Color.BLACK
+    private var penSize = 20f
+    private var eraserSize = 50f
 
     override fun activate() {
         drawControls.visibility = View.VISIBLE
@@ -36,6 +38,9 @@ class DrawToolManager(
 
     fun setupListeners(colorPickerButton: Button, brushSizeSeekBar: SeekBar, eraserButton: Button, clearButton: Button) {
         colorPickerButton.setOnClickListener {
+            drawView.setEraseMode(false)
+            drawView.setDrawingSize(penSize)
+            brushSizeSeekBar.progress = penSize.toInt()
             ColorPickerDialog
                 .Builder(it.context)
                 .setColorShape(ColorShape.SQAURE)
@@ -48,8 +53,13 @@ class DrawToolManager(
 
         brushSizeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // Map progress (0-100) to a reasonable stroke width range (e.g., 1-100)
-                drawView.setDrawingSize(progress.toFloat().coerceAtLeast(1f))
+                val size = progress.toFloat().coerceAtLeast(1f)
+                if (drawView.isEraseMode()) {
+                    eraserSize = size
+                } else {
+                    penSize = size
+                }
+                drawView.setDrawingSize(size)
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
@@ -57,6 +67,8 @@ class DrawToolManager(
 
         eraserButton.setOnClickListener {
             drawView.setEraseMode(true)
+            drawView.setDrawingSize(eraserSize)
+            brushSizeSeekBar.progress = eraserSize.toInt()
         }
         
         clearButton.setOnClickListener {

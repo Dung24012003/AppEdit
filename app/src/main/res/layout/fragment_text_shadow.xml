@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/shadow_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/text_editor_enable_shadow" />
+
+    <TextView
+        android:id="@+id/shadow_radius_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/text_editor_shadow_radius"
+        android:layout_marginTop="16dp"/>
+
+    <SeekBar
+        android:id="@+id/shadow_radius_seek_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="25" />
+
+    <TextView
+        android:id="@+id/shadow_dx_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/text_editor_shadow_dx"
+        android:layout_marginTop="16dp"/>
+
+    <SeekBar
+        android:id="@+id/shadow_dx_seek_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="20" />
+
+    <TextView
+        android:id="@+id/shadow_dy_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/text_editor_shadow_dy"
+        android:layout_marginTop="16dp"/>
+
+    <SeekBar
+        android:id="@+id/shadow_dy_seek_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="20" />
+
+    <TextView
+        android:id="@+id/shadow_color_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/text_editor_shadow_color"
+        android:layout_marginTop="16dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/shadow_color_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="6"
+        tools:listitem="@layout/item_color_button" />
+
+</LinearLayout> 

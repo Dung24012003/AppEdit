@@ -2,10 +2,13 @@ package com.example.dungappedit.model
 
 import android.graphics.Color
 import android.graphics.Typeface
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
 /**
  * Data class that holds all styling information for text items
  */
+@Parcelize
 data class TextStyle(
     var text: String = "Sample Text",
     var textColor: Int = Color.BLACK,
@@ -24,7 +27,7 @@ data class TextStyle(
     var shadowRadius: Float = 5f,
     var shadowDx: Float = 5f,
     var shadowDy: Float = 5f
-) {
+) : Parcelable {
     /**
      * Create a copy of this TextStyle
      */

@@ -82,6 +82,10 @@ class DrawOnImageView @JvmOverloads constructor(
     var imageRectBottom: Float = 0f
         private set
 
+    fun isEraseMode(): Boolean {
+        return isErasing
+    }
+
     interface OnImageDimensionsChangedListener {
         fun onImageDimensionsChanged(
             left: Float, top: Float, right: Float, bottom: Float, width: Int, height: Int

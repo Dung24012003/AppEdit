@@ -3,6 +3,7 @@ package com.example.dungappedit.ui.edit
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.dungappedit.R
@@ -42,11 +43,11 @@ class EditActivity : AppCompatActivity() {
     }
 
     private fun setupTabLayout() {
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Frame"))
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Tool"))
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Filter"))
+        binding.toolbar.addTab(binding.toolbar.newTab().setText("Frame"))
+        binding.toolbar.addTab(binding.toolbar.newTab().setText("Tool"))
+        binding.toolbar.addTab(binding.toolbar.newTab().setText("Filter"))
 
-        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+        binding.toolbar.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 editHostFragment?.handleTabSelection(tab.position)
             }
