@@ -33,8 +33,4 @@ class CameraFilterManager(private val gpuView: GPUImageView) {
             filteredBitmap
         }
     }
-
-    //fun getCurrentFilter(): GPUImageFilter? = gpuView.filter
-
-    //fun getCurrentBitmap(): Bitmap? = gpuView.drawToBitmap()
 }

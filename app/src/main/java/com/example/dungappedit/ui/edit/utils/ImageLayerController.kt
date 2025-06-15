@@ -1,99 +1,55 @@
 package com.example.dungappedit.ui.edit.utils
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
-import android.graphics.Path
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
 import com.example.dungappedit.R
 import com.example.dungappedit.canvas.DrawOnImageView
-import com.example.dungappedit.model.Filter
 
+/**
+ * Manages the layering of frames and other image elements over the main drawing canvas.
+ */
 class ImageLayerController(val hostView: FrameLayout) {
     private val frameOverlay: ImageView = hostView.findViewById(R.id.image_frame_overlay)
-    private val filterOverlay: ImageView = hostView.findViewById(R.id.filter_overlay)
     val drawView: DrawOnImageView = hostView.findViewById(R.id.draw_view)
 
+    /**
+     * Adds a frame bitmap to the overlay, resizing it to fit the main image.
+     */
     fun addFrame(frameBitmap: Bitmap) {
-        // Get the layout params for the overlay
-        val params = frameOverlay.layoutParams as FrameLayout.LayoutParams
+        // Update the frame's bounds to match the image every time a new frame is added.
+        updateFrameBounds()
 
-        // Set the size and position of the frame overlay to match the image
-        params.width = (drawView.imageRectRight - drawView.imageRectLeft).toInt()
-        params.height = (drawView.imageRectBottom - drawView.imageRectTop).toInt()
-        params.leftMargin = drawView.imageRectLeft.toInt()
-        params.topMargin = drawView.imageRectTop.toInt()
-
-        frameOverlay.layoutParams = params
         frameOverlay.setImageBitmap(frameBitmap)
         frameOverlay.visibility = View.VISIBLE
     }
 
+    /**
+     * Updates the position and size of the frame overlay.
+     * This is called when the background image changes size (e.g., after cropping)
+     * or when a new frame is added.
+     */
+    fun updateFrameBounds() {
+        val params = frameOverlay.layoutParams as FrameLayout.LayoutParams
+        val imageWidth = (drawView.imageRectRight - drawView.imageRectLeft).toInt()
+        val imageHeight = (drawView.imageRectBottom - drawView.imageRectTop).toInt()
+
+        // Only update if the image dimensions are valid (greater than 0).
+        if (imageWidth > 0 && imageHeight > 0) {
+            params.width = imageWidth
+            params.height = imageHeight
+            params.leftMargin = drawView.imageRectLeft.toInt()
+            params.topMargin = drawView.imageRectTop.toInt()
+            frameOverlay.layoutParams = params
+        }
+    }
+
+    /**
+     * Removes the current frame from the overlay.
+     */
     fun clearFrame() {
         frameOverlay.setImageBitmap(null)
         frameOverlay.visibility = View.GONE
     }
-
-    fun applyFilter(filter: Filter) {
-        // Get the current view as a bitmap
-        val originalBitmap = drawView.getBitmap()
-
-        // Create a mutable bitmap to apply the filter to
-        val filteredBitmap = originalBitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val canvas = Canvas(filteredBitmap)
-
-        val paint = Paint().apply {
-            colorFilter = ColorMatrixColorFilter(filter.matrix)
-        }
-
-        // Draw the original bitmap onto the new canvas with the filter applied
-        canvas.drawBitmap(originalBitmap, 0f, 0f, paint)
-
-        filterOverlay.setImageBitmap(filteredBitmap)
-        filterOverlay.visibility = View.VISIBLE
-    }
-
-    fun clearFilter() {
-        filterOverlay.setImageBitmap(null)
-        filterOverlay.visibility = View.GONE
-    }
-
-    fun drawPath(path: Path, paint: Paint) {
-        // TODO: Implement drawing logic
-    }
-
-    fun exportBitmap(): Bitmap {
-        // Get the combined bitmap from the drawing view (includes background, drawings, text, stickers)
-        var finalBitmap = drawView.getBitmap()
-
-        // If a filter is active, apply it to the bitmap
-        if (filterOverlay.visibility == View.VISIBLE && filterOverlay.drawable != null) {
-            val paint = Paint().apply {
-                colorFilter = (filterOverlay.drawable as android.graphics.drawable.BitmapDrawable).paint.colorFilter
-            }
-            val filteredBitmap = Bitmap.createBitmap(finalBitmap.width, finalBitmap.height, finalBitmap.config!!)
-            val canvas = Canvas(filteredBitmap)
-            canvas.drawBitmap(finalBitmap, 0f, 0f, paint)
-            finalBitmap = filteredBitmap
-        }
-
-        // If the frame is visible, draw it on top
-        if (frameOverlay.visibility == View.VISIBLE && frameOverlay.drawable != null) {
-            val config = finalBitmap.config ?: Bitmap.Config.ARGB_8888
-            val bitmapWithFrame = Bitmap.createBitmap(finalBitmap.width, finalBitmap.height, config)
-            val canvas = Canvas(bitmapWithFrame)
-            canvas.drawBitmap(finalBitmap, 0f, 0f, null)
-
-            // Scale frame to fit and draw
-            val frameDrawable = frameOverlay.drawable
-            frameDrawable.setBounds(0, 0, finalBitmap.width, finalBitmap.height)
-            frameDrawable.draw(canvas)
-            return bitmapWithFrame
-        }
-
-        return finalBitmap
-    }
-} 
+}

@@ -7,7 +7,7 @@ import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.dungappedit.R
 
-// Placeholder for a sticker model
+// Represents a single sticker item with its image resource.
 data class Sticker(val imageResource: Int)
 
 class StickerAdapter(
@@ -16,7 +16,7 @@ class StickerAdapter(
 ) : RecyclerView.Adapter<StickerAdapter.StickerViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StickerViewHolder {
-        // This layout needs to be created, e.g., res/layout/item_sticker.xml
+        // Inflate the item layout for the sticker.
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sticker, parent, false)
         return StickerViewHolder(view)
     }

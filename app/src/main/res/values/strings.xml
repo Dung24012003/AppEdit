@@ -72,27 +72,27 @@
     <string name="crop_1_1">1:1</string>
     <string name="crop_3_4">3:4</string>
     <string name="crop_6_9">9:16</string>
-    <string name="crop_full">Tự Do</string>
-    <string name="crop_reset">Khôi Phục</string>
-    <string name="crop_title">Cắt Ảnh</string>
+    <string name="crop_full">Tự do</string>
+    <string name="crop_reset">Khôi phục</string>
+    <string name="crop_title">Cắt ảnh</string>
 
     <!-- Text editor strings -->
     <string name="text_editor_title">Chỉnh sửa văn bản</string>
-    <string name="text_editor_enter_text">Nhập văn bản</string>
+    <string name="text_editor_enter_text">Nhập văn bản của bạn</string>
     <string name="text_editor_text_color">Màu chữ</string>
-    <string name="text_editor_text_size">Kích thước chữ</string>
+    <string name="text_editor_text_size">Cỡ chữ</string>
     <string name="text_editor_font">Phông chữ</string>
-    <string name="text_editor_stroke">Viền</string>
-    <string name="text_editor_enable_stroke">Bật viền</string>
-    <string name="text_editor_stroke_color">Màu viền</string>
-    <string name="text_editor_stroke_width">Độ dày viền</string>
-    <string name="text_editor_shadow">Bóng đổ</string>
-    <string name="text_editor_enable_shadow">Bật bóng đổ</string>
-    <string name="text_editor_shadow_color">Màu bóng đổ</string>
-    <string name="text_editor_shadow_radius">Độ mờ bóng</string>
-    <string name="text_editor_shadow_dx">Vị trí X bóng</string>
-    <string name="text_editor_shadow_dy">Vị trí Y bóng</string>
+    <string name="text_editor_stroke">Nét chữ</string>
+    <string name="text_editor_enable_stroke">Bật nét chữ</string>
+    <string name="text_editor_stroke_color">Màu nét chữ</string>
+    <string name="text_editor_stroke_width">Độ rộng nét chữ</string>
+    <string name="text_editor_shadow">Bóng</string>
+    <string name="text_editor_enable_shadow">Bật bóng</string>
+    <string name="text_editor_shadow_color">Màu bóng</string>
+    <string name="text_editor_shadow_radius">Bán kính bóng</string>
+    <string name="text_editor_shadow_dx">Độ lệch X</string>
+    <string name="text_editor_shadow_dy">Độ lệch Y</string>
     <string name="text_editor_apply">Áp dụng</string>
-    <string name="text_editor_cancel">Hủy bỏ</string>
+    <string name="text_editor_cancel">Hủy</string>
     <string name="text_editor_preview">Xem trước</string>
 </resources>

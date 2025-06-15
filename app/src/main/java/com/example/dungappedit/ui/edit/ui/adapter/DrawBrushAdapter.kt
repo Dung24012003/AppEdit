@@ -15,7 +15,7 @@ class DrawBrushAdapter(
 ) : RecyclerView.Adapter<DrawBrushAdapter.BrushViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BrushViewHolder {
-        // This layout needs to be created, e.g., res/layout/item_brush.xml
+        // Inflate the item layout for the brush preview.
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_brush, parent, false)
         return BrushViewHolder(view)
     }

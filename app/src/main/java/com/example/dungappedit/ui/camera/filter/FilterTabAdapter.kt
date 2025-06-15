@@ -30,7 +30,7 @@ class FilterTabAdapter(private val context: Context) {
         tabLayoutRef = tabLayout
         tabLayout.removeAllTabs()
 
-        // Disable TabLayout dragging
+        // Disable TabLayout dragging to implement custom centering logic
         tabLayout.touchables.forEach { it.isClickable = true }
         tabLayout.setScrollPosition(0, 0f, false)
         tabLayout.isHorizontalScrollBarEnabled = false
@@ -59,7 +59,7 @@ class FilterTabAdapter(private val context: Context) {
                 val paddingTabsCount = getPaddingTabsCount()
                 val totalTabs = tabLayout.tabCount
 
-                // Handle padding tabs
+                // Handle padding tabs: if a padding tab is selected, select the nearest real tab
                 if (tab.position < paddingTabsCount || tab.position >= totalTabs - paddingTabsCount) {
                     val closestRealTab = if (tab.position < paddingTabsCount) {
                         tabLayout.getTabAt(paddingTabsCount)
@@ -88,7 +88,7 @@ class FilterTabAdapter(private val context: Context) {
             }
         })
 
-        // Handle click manually for real tabs only
+        // Handle click manually for real tabs only to prevent padding tabs from being selected.
         for (i in 0 until tabLayout.tabCount) {
             val tab = tabLayout.getTabAt(i) ?: continue
             if (i in getPaddingTabsCount() until (tabLayout.tabCount - getPaddingTabsCount())) {
@@ -127,7 +127,7 @@ class FilterTabAdapter(private val context: Context) {
     private fun createPaddingView(): View {
         val view =
             LayoutInflater.from(context).inflate(R.layout.item_filter_tab, tabLayoutRef, false)
-        view.alpha = 0f
+        view.alpha = 0f // Make padding invisible but still take up space
         return view
     }
 
@@ -169,14 +169,14 @@ class FilterTabAdapter(private val context: Context) {
 
     private fun getFilterName(filter: CameraFilter): String {
         return when (filter) {
-            CameraFilter.ORIGINAL -> "Gốc"
-            CameraFilter.BRIGHT -> "Sáng"
-            CameraFilter.DARK -> "Tối"
-            CameraFilter.WARM -> "Vàng"
-            CameraFilter.COOL -> "Lạnh"
-            CameraFilter.COMIC -> "Truyện"
-            CameraFilter.PENCIL -> "Vẽ"
-            CameraFilter.VIGNETTE -> "Bo góc"
+            CameraFilter.ORIGINAL -> "Original"
+            CameraFilter.BRIGHT -> "Bright"
+            CameraFilter.DARK -> "Dark"
+            CameraFilter.WARM -> "Warm"
+            CameraFilter.COOL -> "Cool"
+            CameraFilter.COMIC -> "Comic"
+            CameraFilter.PENCIL -> "Pencil"
+            CameraFilter.VIGNETTE -> "Vignette"
         }
     }
 }

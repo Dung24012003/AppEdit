@@ -18,7 +18,6 @@ class AlbumActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
-            //setDisplayShowTitleEnabled(false) // hide title
         }
 
         initData()

@@ -1,18 +1,18 @@
 package com.example.dungappedit.ui.edit.tools
 
 import android.content.Context
-import androidx.recyclerview.widget.RecyclerView
-import com.example.dungappedit.R
-import com.example.dungappedit.ui.edit.ui.adapter.Sticker
-import com.example.dungappedit.ui.edit.ui.adapter.StickerAdapter
-import com.example.dungappedit.ui.edit.utils.ImageLayerController
 import android.graphics.BitmapFactory
 import android.view.View
+import androidx.recyclerview.widget.RecyclerView
+import com.example.dungappedit.R
+import com.example.dungappedit.canvas.DrawOnImageView
+import com.example.dungappedit.ui.edit.ui.adapter.Sticker
+import com.example.dungappedit.ui.edit.ui.adapter.StickerAdapter
 
 class StickerToolManager(
     private val context: Context,
     private val stickerRecyclerView: RecyclerView,
-    private val imageLayerController: ImageLayerController
+    private val drawView: DrawOnImageView
 ) : BaseToolManager {
 
     private val stickerAdapter: StickerAdapter
@@ -38,19 +38,22 @@ class StickerToolManager(
     }
 
     override fun applyChanges() {
-        // Stickers are added directly.
+        // Stickers are added directly to the canvas, so no final apply step is needed.
+    }
+
+    fun removeAllStickers() {
+        // TODO: This currently clears all movable items (text, stickers).
+        // A more specific method in DrawOnImageView is needed to only remove stickers.
+        drawView.clearAll()
     }
 
     private fun onStickerSelected(sticker: Sticker) {
         val bitmap = BitmapFactory.decodeResource(context.resources, sticker.imageResource)
-        // The current implementation of ImageLayerController doesn't use StickerView.
-        // It uses DrawOnImageView directly.
-        // Let's add the sticker to the DrawOnImageView.
-        (imageLayerController.hostView.findViewById(R.id.draw_view) as com.example.dungappedit.canvas.DrawOnImageView)
-            .addStickerItem(bitmap)
+        drawView.addStickerItem(bitmap)
     }
 
     private fun loadStickers(): List<Sticker> {
+        // Ensure that the Sticker model class is correctly defined.
         return listOf(
             Sticker(R.drawable.stikcer),
             Sticker(R.drawable.stikcer1),
@@ -60,4 +63,4 @@ class StickerToolManager(
             Sticker(R.drawable.stikcer6)
         )
     }
-} 
+}

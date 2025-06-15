@@ -14,7 +14,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-        
+
         <com.example.dungappedit.canvas.DrawOnImageView
             android:id="@+id/draw_view"
             android:layout_width="match_parent"
@@ -25,16 +25,12 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
-            android:id="@+id/filter_overlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone" />
-        
-        <ImageView
             android:id="@+id/image_frame_overlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone" />
+            android:scaleType="fitXY"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
     </FrameLayout>
 
@@ -50,8 +46,7 @@
             android:id="@+id/frame_tool_recycler"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
-            tools:visibility="visible" />
+            android:visibility="gone" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/filter_tool_recycler"
@@ -84,44 +79,118 @@
                 android:layout_height="wrap_content"
                 android:max="100" />
 
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="horizontal">
 
-                <Button
+                <ImageButton
                     android:id="@+id/btn_draw_color"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Color" />
+                    android:background="@drawable/choosecolor"
+                    app:layout_constraintEnd_toStartOf="@+id/btn_eraser"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/btn_eraser" />
 
-                <Button
+                <ImageButton
                     android:id="@+id/btn_eraser"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Eraser" />
+                    android:background="@drawable/eraser"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-                <Button
+                <ImageButton
                     android:id="@+id/btn_clear_drawing"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Clear" />
-            </LinearLayout>
+                    android:background="@drawable/clear"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/btn_eraser"
+                    app:layout_constraintTop_toTopOf="@+id/btn_eraser" />
+
+                <ImageButton
+                    android:id="@+id/btn_finish_drawing"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/ic_check"
+                    android:padding="8dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/text_controls"
+            android:id="@+id/hue_saturation_controls"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center"
+            android:background="#40000000"
+            android:orientation="vertical"
+            android:padding="8dp"
             android:visibility="gone">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="Tông màu"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp" />
+
+                <SeekBar
+                    android:id="@+id/seekbar_hue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="360"
+                    android:progress="180" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="Bão hòa"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp" />
+
+                <SeekBar
+                    android:id="@+id/seekbar_saturation"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="200"
+                    android:progress="100" />
+            </LinearLayout>
+
             <Button
-                android:id="@+id/btn_add_text"
+                android:id="@+id/btn_reset_hue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Add Text" />
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/reset_button_background"
+                android:text="Mặc định"
+                android:textSize="8dp"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white" />
         </LinearLayout>
+
     </FrameLayout>
-</androidx.constraintlayout.widget.ConstraintLayout> 
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -8,6 +8,7 @@
     android:background="@color/black"
     tools:context=".ui.camera.CameraFragment">
 
+    <!-- Main container for preview, filter and overlay -->
     <FrameLayout
         android:id="@+id/previewContainer"
         android:layout_width="match_parent"
@@ -16,25 +17,39 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <!-- Raw camera video layer -->
         <androidx.camera.view.PreviewView
             android:id="@+id/viewFinder"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_gravity="center"
             android:scaleType="fitCenter" />
 
+        <!-- Filtered video display layer -->
         <jp.co.cyberagent.android.gpuimage.GPUImageView
             android:id="@+id/gpuView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_gravity="center"
             android:scaleType="centerCrop" />
 
+        <!-- Grid layer -->
         <com.example.dungappedit.ui.camera.GridOverlayView
             android:id="@+id/gridOverlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_gravity="center"
             android:visibility="gone" />
+
+        <!-- Sticker drawing layer (important: must be last to draw on top) -->
+        <com.example.dungappedit.ui.camera.stikcer.FaceStickerOverlayView
+            android:id="@+id/faceStickerOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center" />
     </FrameLayout>
 
+    <!-- Left function buttons -->
     <ImageButton
         android:id="@+id/imgBtnFlas"
         android:layout_width="wrap_content"
@@ -46,6 +61,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Right function buttons -->
     <ImageButton
         android:id="@+id/imgBtnTimerAndRatio"
         android:layout_width="wrap_content"
@@ -78,7 +94,7 @@
         app:layout_constraintTop_toBottomOf="@+id/imgBtnRotate" />
 
     <ImageButton
-        android:id="@+id/img_btn_Grit"
+        android:id="@+id/imgBtnGrit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/distance_20dp"
@@ -87,6 +103,16 @@
         app:layout_constraintStart_toStartOf="@+id/imgBtnBrightness"
         app:layout_constraintTop_toBottomOf="@+id/imgBtnBrightness" />
 
+    <ImageButton
+        android:id="@+id/imgBtnFace"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/distance_20dp"
+        android:background="@drawable/iconface"
+        app:layout_constraintStart_toStartOf="@+id/imgBtnGrit"
+        app:layout_constraintTop_toBottomOf="@+id/imgBtnGrit" />
+
+    <!-- Popup layouts (brightness, timer, ratio) -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/brightnessControlLayout"
         android:layout_width="match_parent"
@@ -100,7 +126,7 @@
         app:layout_constraintBottom_toTopOf="@+id/imgBtnCapture"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
-
+        <!-- Content for brightness control -->
         <ImageView
             android:id="@+id/brightnessDarkIcon"
             android:layout_width="@dimen/distance_24dp"
@@ -151,9 +177,9 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/brightnessSeekBar" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Container cho Timer và Ratio tabs -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/timerRatioContainer"
         android:layout_width="match_parent"
@@ -167,7 +193,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-
+        <!-- Content for timer/ratio control -->
         <TextView
             android:id="@+id/txtTimerRatioTitle"
             android:layout_width="wrap_content"
@@ -191,7 +217,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txtTimerRatioTitle"
-            app:tabBackground="@null"
+            app:tabBackground="@drawable/tab_selector"
             app:tabGravity="fill"
             app:tabIndicatorHeight="@dimen/distance_0dp"
             app:tabInlineLabel="true"
@@ -224,7 +250,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txtRatioLabel"
-            app:tabBackground="@null"
+            app:tabBackground="@drawable/tab_selector"
             app:tabGravity="fill"
             app:tabIndicatorHeight="@dimen/distance_0dp"
             app:tabInlineLabel="true"
@@ -236,23 +262,50 @@
             app:tabTextColor="@color/white" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabFilter"
+    <!-- Container for Filter and Sticker tabs -->
+    <FrameLayout
+        android:id="@+id/bottomTabsContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
+        android:layout_marginBottom="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/imgBtnCapture"
-        app:tabBackground="@android:color/transparent"
-        app:tabGravity="fill"
-        app:tabIndicator="@null"
-        app:tabMinWidth="@dimen/tab_min_width"
-        app:tabMode="scrollable"
-        app:tabPaddingEnd="@dimen/distance_8dp"
-        app:tabPaddingStart="@dimen/distance_8dp"
-        app:tabRippleColor="@null" />
+        app:layout_constraintTop_toTopOf="@+id/imgBtnCapture">
 
+        <!-- Filter tab (default) -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabFilter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            app:tabBackground="@android:color/transparent"
+            app:tabGravity="fill"
+            app:tabIndicator="@null"
+            app:tabMinWidth="@dimen/tab_min_width"
+            app:tabMode="scrollable"
+            app:tabPaddingEnd="@dimen/distance_8dp"
+            app:tabPaddingStart="@dimen/distance_8dp"
+            app:tabRippleColor="@null" />
+
+        <!-- Sticker tab (hidden by default) -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabSticker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:visibility="gone"
+            app:tabBackground="@android:color/transparent"
+            app:tabGravity="fill"
+            app:tabIndicator="@null"
+            app:tabMinWidth="@dimen/tab_min_width"
+            app:tabMode="scrollable"
+            app:tabPaddingEnd="@dimen/distance_8dp"
+            app:tabPaddingStart="@dimen/distance_8dp"
+            app:tabRippleColor="@null" />
+
+    </FrameLayout>
+
+    <!-- Main controls at the bottom -->
     <ImageButton
         android:id="@+id/imgBtnAlbum"
         android:layout_width="@dimen/distance_50dp"
@@ -260,6 +313,7 @@
         android:layout_marginStart="@dimen/distance_10dp"
         android:background="@drawable/itemfilter"
         android:contentDescription="@string/edit_image_icon"
+        android:scaleType="fitXY"
         app:layout_constraintBottom_toBottomOf="@id/imgBtnCapture"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/imgBtnCapture" />

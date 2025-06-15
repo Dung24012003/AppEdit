@@ -5,9 +5,26 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.dungappedit.ui.camera.filter.CameraFilter
+import com.example.dungappedit.ui.camera.stikcer.Sticker
 
 class CameraViewModel : ViewModel() {
-    private val _aspectRatio = MutableLiveData("3:4")
+
+    // Sticker selection state
+    private val _selectedSticker = MutableLiveData(Sticker.NONE)
+    val selectedSticker: LiveData<Sticker> = _selectedSticker
+
+    val stickerOptions = Sticker.entries.toList() // Get the list of all stickers from the Enum
+
+    fun setSelectedSticker(sticker: Sticker) {
+        _selectedSticker.value = sticker
+    }
+
+    // List of choices
+    val aspectRatios = listOf("3:4", "9:16", "1:1", "Full") // Add "Full" back as it will be used by ViewPort
+    val timerOptions = listOf(0, 3, 5, 10) // Use Int for easier handling
+
+    // Camera and UI state
+    private val _aspectRatio = MutableLiveData(aspectRatios.first()) // "3:4"
     val aspectRatio: LiveData<String> = _aspectRatio
 
     private val _isFlashEnabled = MutableLiveData(false)
@@ -25,7 +42,7 @@ class CameraViewModel : ViewModel() {
     private val _isTimerRatioContainerVisible = MutableLiveData(false)
     val isTimerRatioContainerVisible: LiveData<Boolean> = _isTimerRatioContainerVisible
 
-    private val _timerSeconds = MutableLiveData(0)
+    private val _timerSeconds = MutableLiveData(timerOptions.first()) // 0
     val timerSeconds: LiveData<Int> = _timerSeconds
 
     private val _isBrightnessControlVisible = MutableLiveData(false)
@@ -34,6 +51,7 @@ class CameraViewModel : ViewModel() {
     private val _brightnessLevel = MutableLiveData(50)
     val brightnessLevel: LiveData<Int> = _brightnessLevel
 
+    // Functions to change state
     fun setAspectRatio(ratio: String) {
         _aspectRatio.value = ratio
     }
@@ -50,6 +68,7 @@ class CameraViewModel : ViewModel() {
         _lensFacing.value = if (_lensFacing.value == CameraSelector.LENS_FACING_BACK) {
             CameraSelector.LENS_FACING_FRONT
         } else {
+            // Auto turn off flash when switching to back camera
             _isFlashEnabled.value = false
             CameraSelector.LENS_FACING_BACK
         }
@@ -60,9 +79,7 @@ class CameraViewModel : ViewModel() {
     }
 
     fun toggleTimerRatioContainer() {
-        _isTimerRatioContainerVisible.value = _isTimerRatioContainerVisible.value != true
-
-        // When displaying the container, hide other controls
+        _isTimerRatioContainerVisible.value = !_isTimerRatioContainerVisible.value!!
         if (_isTimerRatioContainerVisible.value == true) {
             _isBrightnessControlVisible.value = false
         }
@@ -73,10 +90,8 @@ class CameraViewModel : ViewModel() {
     }
 
     fun toggleBrightnessControl() {
-        _isBrightnessControlVisible.value = _isBrightnessControlVisible.value != true
-
-        // When displaying brightness control, hide other controls
-        if (_isBrightnessControlVisible.value == true && _isTimerRatioContainerVisible.value == true) {
+        _isBrightnessControlVisible.value = !_isBrightnessControlVisible.value!!
+        if (_isBrightnessControlVisible.value == true) {
             _isTimerRatioContainerVisible.value = false
         }
     }
@@ -90,10 +105,11 @@ class CameraViewModel : ViewModel() {
     }
 
     fun toggleTimerRatioContainerAndBrightnessControl() {
-        when {
-            _isBrightnessControlVisible.value == true -> _isBrightnessControlVisible.value = false
-            _isTimerRatioContainerVisible.value == true -> _isTimerRatioContainerVisible.value =
-                false
+        if (_isBrightnessControlVisible.value == true) {
+            _isBrightnessControlVisible.value = false
+        }
+        if (_isTimerRatioContainerVisible.value == true) {
+            _isTimerRatioContainerVisible.value = false
         }
     }
 }

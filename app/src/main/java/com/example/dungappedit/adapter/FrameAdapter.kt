@@ -3,12 +3,12 @@ package com.example.dungappedit.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.dungappedit.model.FrameItem
 import com.example.dungappedit.databinding.ItemFrameBinding
+import com.example.dungappedit.model.Frame
 
 class FrameAdapter(
-    private val frameItems: List<FrameItem>,
-    private val onFrameSelected: (FrameItem) -> Unit
+    private val frameItems: List<Frame>,
+    private val onFrameSelected: (Frame) -> Unit
 ) : RecyclerView.Adapter<FrameAdapter.FrameViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FrameViewHolder {
@@ -24,7 +24,7 @@ class FrameAdapter(
 
     inner class FrameViewHolder(private val binding: ItemFrameBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun bind(frameItem: FrameItem) {
+        fun bind(frameItem: Frame) {
             binding.framePreview.setImageResource(frameItem.frameResourceId)
             binding.frameName.text = frameItem.name
 
@@ -33,4 +33,4 @@ class FrameAdapter(
             }
         }
     }
-} 
+}

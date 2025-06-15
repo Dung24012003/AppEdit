@@ -1,23 +1,21 @@
 package com.example.dungappedit.ui.edit.tools
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.dungappedit.R
+import com.example.dungappedit.canvas.DrawOnImageView
 import com.yalantis.ucrop.UCrop
 import java.io.File
-import com.example.dungappedit.canvas.DrawOnImageView
-import com.example.dungappedit.ui.edit.utils.ImageLayerController
-import android.graphics.BitmapFactory
-import android.view.ViewGroup
 import java.io.FileOutputStream
 import java.util.UUID
 
 class CropToolManager(
     private val fragment: Fragment,
     private val drawView: DrawOnImageView,
-    private val imageLayerController: ImageLayerController
+    private val filterToolManager: FilterToolManager
 ) : BaseToolManager {
 
     private var sourceUri: Uri? = null
@@ -35,6 +33,10 @@ class CropToolManager(
     }
 
     private fun startCrop(aspectRatioX: Float = 0f, aspectRatioY: Float = 0f) {
+        // Deselect any selected item (text/sticker) to hide its controls.
+        drawView.clearSelection()
+
+        // Capture the current image state to pass to the cropper.
         val bitmap = captureFullLayout()
         val tempUri = saveBitmapToTempFile(bitmap)
         latestTempUri = tempUri
@@ -44,7 +46,7 @@ class CropToolManager(
 
         val context = fragment.requireContext()
         val uCropOptions = UCrop.of(tempUri, destinationUri)
-            .withMaxResultSize(1080, 1080)
+            .withMaxResultSize(2000, 2000)
             .withOptions(UCrop.Options().apply {
                 setHideBottomControls(false)
                 setFreeStyleCropEnabled(true)
@@ -58,12 +60,7 @@ class CropToolManager(
                 setStatusBarColor(ContextCompat.getColor(context, R.color.purple_500))
                 setToolbarColor(ContextCompat.getColor(context, R.color.purple_500))
                 setToolbarTitle(context.getString(R.string.crop_title))
-                setActiveControlsWidgetColor(
-                    ContextCompat.getColor(
-                        context,
-                        R.color.purple_500
-                    )
-                )
+                setActiveControlsWidgetColor(ContextCompat.getColor(context, R.color.purple_500))
             })
 
         if (aspectRatioX > 0 && aspectRatioY > 0) {
@@ -74,24 +71,19 @@ class CropToolManager(
     }
 
     private fun captureFullLayout(): Bitmap {
-        val bitmap = Bitmap.createBitmap(drawView.width, drawView.height, Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(bitmap)
-        drawView.draw(canvas)
-        return bitmap
+        return drawView.getCurrentImageState()
     }
 
     private fun saveBitmapToTempFile(bitmap: Bitmap): Uri {
         val context = fragment.requireContext()
         val tempFile = File(context.cacheDir, "temp_crop_${System.currentTimeMillis()}.jpg")
         FileOutputStream(tempFile).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
         }
         return Uri.fromFile(tempFile)
     }
 
     override fun deactivate() {
-        // Called when the user cancels the crop or selects another tool.
-        // We reset the active state here.
         isActive = false
     }
 
@@ -100,25 +92,17 @@ class CropToolManager(
     }
 
     override fun applyChanges() {
-        // Crop is applied via UCrop's result in the fragment's onActivityResult
+        // Not needed for this tool as changes are handled by the cropping activity.
     }
 
     fun handleCropResult(uri: Uri) {
-        val bitmap =
-            BitmapFactory.decodeStream(fragment.requireContext().contentResolver.openInputStream(uri))
+        val bitmap = BitmapFactory.decodeStream(fragment.requireContext().contentResolver.openInputStream(uri))
+
+        drawView.clearAll()
         drawView.setBackgroundBitmap(bitmap)
-
-        // Force the view to wrap its new content.
-        val params = drawView.layoutParams
-        params.width = ViewGroup.LayoutParams.WRAP_CONTENT
-        params.height = ViewGroup.LayoutParams.WRAP_CONTENT
-        drawView.layoutParams = params
-
-        // Force the view to remeasure and redraw to fit the new cropped image
-        drawView.requestLayout()
-        drawView.invalidate()
+        filterToolManager.applyOriginalFilter()
 
         setSourceUri(uri)
         isActive = false
     }
-} 
+}

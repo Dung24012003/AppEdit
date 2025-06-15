@@ -12,7 +12,6 @@ sealed class MovableItem {
     var scale: Float = 1.0f
     var rotation: Float = 0f  // Rotation in degrees
     var isSelected: Boolean = false
-    var doubleClickCount: Int = 0  // Track double-click events
 
     class TextItem(
         var text: String,

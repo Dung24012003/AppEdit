@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorFilter
 import android.graphics.DashPathEffect
 import android.graphics.Matrix
 import android.graphics.Paint
@@ -30,8 +31,9 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 class DrawOnImageView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null
-) : View(context, attrs) {
+    context: Context, attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
 
     companion object {
         private const val MAX_STICKER_RESOLUTION = 1024f
@@ -63,6 +65,8 @@ class DrawOnImageView @JvmOverloads constructor(
 
     private val imagePaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
 
+    private var activeColorFilter: ColorFilter? = null
+
     private var drawCanvas: Canvas? = null
     private var canvasBitmap: Bitmap? = null
     private var backgroundBitmap: Bitmap? = null
@@ -82,6 +86,10 @@ class DrawOnImageView @JvmOverloads constructor(
     var imageRectBottom: Float = 0f
         private set
 
+    fun isEraseMode(): Boolean {
+        return isErasing
+    }
+
     interface OnImageDimensionsChangedListener {
         fun onImageDimensionsChanged(
             left: Float, top: Float, right: Float, bottom: Float, width: Int, height: Int
@@ -92,6 +100,10 @@ class DrawOnImageView @JvmOverloads constructor(
 
     fun setOnImageDimensionsChangedListener(listener: OnImageDimensionsChangedListener) {
         imageDimensionsListener = listener
+    }
+
+    fun getOriginalBitmap(): Bitmap? {
+        return originalBackgroundBitmap
     }
 
     private class ItemControls(val item: MovableItem) {
@@ -192,14 +204,26 @@ class DrawOnImageView @JvmOverloads constructor(
         }
     }
 
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        backgroundBitmap?.let { canvas.drawBitmap(it, imageRectLeft, imageRectTop, null) }
+    /**
+     * Sets a color filter to be applied to the background image when drawing.
+     * @param colorFilter The filter to apply, or null to clear the filter.
+     */
+    fun setBackgroundImageFilter(colorFilter: ColorFilter?) {
+        this.activeColorFilter = colorFilter
+        invalidate() // Redraw the view with the new filter
+    }
+
+    fun drawLayers(canvas: Canvas, matrix: Matrix? = null) {
         val imageClipRect = RectF(imageRectLeft, imageRectTop, imageRectRight, imageRectBottom)
         val saveCount = canvas.save()
+
+        matrix?.let { canvas.concat(it) }
+
         canvas.clipRect(imageClipRect)
+
         canvasBitmap?.let { canvas.drawBitmap(it, 0f, 0f, null) }
         canvas.drawPath(drawPath, drawPaint)
+
         for (item in movableItems) {
             when (item) {
                 is MovableItem.TextItem -> {
@@ -233,10 +257,27 @@ class DrawOnImageView @JvmOverloads constructor(
             }
         }
         canvas.restoreToCount(saveCount)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+
+        // Draw the scaled-down background image for display
+        backgroundBitmap?.let {
+            // Apply filter to Paint if it exists
+            imagePaint.colorFilter = activeColorFilter
+            canvas.drawBitmap(it, imageRectLeft, imageRectTop, imagePaint)
+        }
+
+        // Draw all user edits on top of the background
+        drawLayers(canvas)
+
+        // Draw non-saved UI elements
         itemControls.forEach { it.drawControls(canvas) }
         if (showClipBoundary) {
             clipHighlightPaint.alpha = clipHighlightAlpha
-            canvas.drawRect(imageClipRect, clipHighlightPaint)
+            val clipRect = RectF(imageRectLeft, imageRectTop, imageRectRight, imageRectBottom)
+            canvas.drawRect(clipRect, clipHighlightPaint)
         }
         if (showBorder) {
             if (backgroundBitmap != null) {
@@ -261,7 +302,6 @@ class DrawOnImageView @JvmOverloads constructor(
         return true
     }
 
-    // Helper mới: Tính góc của đường thẳng nối 2 ngón tay
     private fun angle(event: MotionEvent): Float {
         val deltaX = event.getX(0) - event.getX(1)
         val deltaY = event.getY(0) - event.getY(1)
@@ -278,19 +318,13 @@ class DrawOnImageView @JvmOverloads constructor(
                 isMultiTouch = false
                 isRotating = false
                 currentDraggedItem = null
-
                 val selectedItem = movableItems.find { it.isSelected }
-
-                // SỬA LỖI HITBOX: Kiểm tra chạm vào control button ở tọa độ màn hình
                 if (selectedItem != null && handleControlTouch(x, y, selectedItem)) {
-                    // Đã chạm vào nút xóa hoặc bắt đầu xoay bằng nút, không làm gì thêm
                     return
                 }
-
                 val touchedItem = findTouchedItem(x, y)
                 if (touchedItem != null) {
                     if (handleDoubleClick(touchedItem)) return
-
                     lastClickTime = System.currentTimeMillis()
                     currentDraggedItem = touchedItem
                     touchOffsetX = x - touchedItem.x
@@ -301,27 +335,22 @@ class DrawOnImageView @JvmOverloads constructor(
                 }
                 invalidate()
             }
-
             MotionEvent.ACTION_POINTER_DOWN -> {
-                // Nếu ngón thứ 2 chạm vào, chuẩn bị cho zoom/xoay
                 if (event.pointerCount == 2) {
                     itemToZoom = movableItems.find { it.isSelected }
                     if (itemToZoom != null) {
                         oldDist = spacing(event)
-                        lastAngle = angle(event) // Lấy góc ban đầu của 2 ngón tay
+                        lastAngle = angle(event)
                         if (oldDist > 10f) {
                             isMultiTouch = true
-                            currentDraggedItem = null // Hủy chế độ kéo
-                            isRotating = false      // Hủy chế độ xoay bằng nút
+                            currentDraggedItem = null
+                            isRotating = false
                         }
                     }
                 }
             }
-
             MotionEvent.ACTION_MOVE -> {
-                // TÍNH NĂNG MỚI: Xử lý đồng thời cả zoom và xoay 2 ngón tay
                 if (isMultiTouch && event.pointerCount >= 2 && itemToZoom != null) {
-                    // Tính toán zoom
                     val newDist = spacing(event)
                     if (newDist > 10f) {
                         val scale = newDist / oldDist
@@ -330,30 +359,22 @@ class DrawOnImageView @JvmOverloads constructor(
                         itemToZoom!!.scale = newScale
                         oldDist = newDist
                     }
-
-                    // Tính toán xoay
                     val newAngle = angle(event)
                     val angleDiff = newAngle - lastAngle
                     itemToZoom!!.rotation = (itemToZoom!!.rotation + angleDiff) % 360f
                     lastAngle = newAngle
-
                     invalidate()
-                }
-                // Chế độ xoay bằng nút (vẫn giữ lại)
-                else if (isRotating && itemToRotate != null) {
+                } else if (isRotating && itemToRotate != null) {
                     val newAngle = calculateAngle(itemCenterX, itemCenterY, x, y)
                     val angleDiff = newAngle - lastAngle
                     itemToRotate!!.rotation = (itemToRotate!!.rotation + angleDiff) % 360f
                     lastAngle = newAngle
                     invalidate()
-                }
-                // Chế độ kéo bằng 1 ngón tay
-                else if (currentDraggedItem != null) {
+                } else if (currentDraggedItem != null) {
                     moveItemWithConstraints(currentDraggedItem!!, x, y)
                     invalidate()
                 }
             }
-
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 activePointerId = MotionEvent.INVALID_POINTER_ID
                 isMultiTouch = false
@@ -382,7 +403,6 @@ class DrawOnImageView @JvmOverloads constructor(
     }
 
     private fun handleControlTouch(touchX: Float, touchY: Float, item: MovableItem): Boolean {
-        // Lấy ma trận biến đổi của item (xoay và scale)
         val matrix = Matrix()
         val bounds = when (item) {
             is MovableItem.TextItem -> item.getBounds()
@@ -392,38 +412,27 @@ class DrawOnImageView @JvmOverloads constructor(
         val centerY = bounds.centerY()
         matrix.postRotate(item.rotation, centerX, centerY)
         matrix.postScale(item.scale, item.scale, centerX, centerY)
-
-        // Tính hitbox cho nút XÓA trên màn hình
         val deletePoint = floatArrayOf(bounds.right, bounds.top)
         matrix.mapPoints(deletePoint)
-        val deleteHitRect = RectF(
-            deletePoint[0] - ItemControls.BUTTON_SIZE, deletePoint[1] - ItemControls.BUTTON_SIZE,
-            deletePoint[0] + ItemControls.BUTTON_SIZE, deletePoint[1] + ItemControls.BUTTON_SIZE
-        )
+        val deleteHitRect = RectF(deletePoint[0] - ItemControls.BUTTON_SIZE, deletePoint[1] - ItemControls.BUTTON_SIZE, deletePoint[0] + ItemControls.BUTTON_SIZE, deletePoint[1] + ItemControls.BUTTON_SIZE)
         if (deleteHitRect.contains(touchX, touchY)) {
             movableItems.remove(item)
             itemControls.removeAll { it.item == item }
             invalidate()
-            return true // Đã xử lý
+            return true
         }
-
-        // Tính hitbox cho nút XOAY trên màn hình
         val rotatePoint = floatArrayOf(bounds.left, bounds.bottom)
         matrix.mapPoints(rotatePoint)
-        val rotateHitRect = RectF(
-            rotatePoint[0] - ItemControls.BUTTON_SIZE, rotatePoint[1] - ItemControls.BUTTON_SIZE,
-            rotatePoint[0] + ItemControls.BUTTON_SIZE, rotatePoint[1] + ItemControls.BUTTON_SIZE
-        )
+        val rotateHitRect = RectF(rotatePoint[0] - ItemControls.BUTTON_SIZE, rotatePoint[1] - ItemControls.BUTTON_SIZE, rotatePoint[0] + ItemControls.BUTTON_SIZE, rotatePoint[1] + ItemControls.BUTTON_SIZE)
         if (rotateHitRect.contains(touchX, touchY)) {
-            isRotating = true // Bật chế độ xoay bằng nút
+            isRotating = true
             itemToRotate = item
             this.itemCenterX = centerX
             this.itemCenterY = centerY
             lastAngle = calculateAngle(centerX, centerY, touchX, touchY)
-            return true // Đã xử lý
+            return true
         }
-
-        return false // Không chạm vào nút nào
+        return false
     }
 
     private fun handleDoubleClick(item: MovableItem): Boolean {
@@ -623,5 +632,26 @@ class DrawOnImageView @JvmOverloads constructor(
             invalidate()
             clipHighlightHandler.postDelayed(clipHighlightRunnable, clipHighlightFadeDuration)
         }
+    }
+
+    fun getCurrentImageState(): Bitmap {
+        val resultBitmap = createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(resultBitmap)
+        this.draw(canvas)
+        return resultBitmap
+    }
+
+    fun clearAll() {
+        drawPath.reset()
+        canvasBitmap?.eraseColor(Color.TRANSPARENT)
+        movableItems.clear()
+        itemControls.clear()
+        invalidate()
+    }
+
+    fun clearSelection() {
+        movableItems.forEach { it.isSelected = false }
+        itemControls.clear()
+        invalidate()
     }
 }

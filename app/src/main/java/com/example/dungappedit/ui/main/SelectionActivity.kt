@@ -38,6 +38,8 @@ class SelectionActivity : AppCompatActivity() {
         if (isGranted) {
             checkStoragePermissionsForCamera()
         } else {
+            // Re-enable buttons if permission is denied.
+            enableButtons()
             if (!shouldShowRequestPermissionRationale(CAMERA_PERMISSION)) {
                 showSettingsDialog("Camera")
             } else {
@@ -57,26 +59,22 @@ class SelectionActivity : AppCompatActivity() {
                 openImagePicker()
             }
         } else {
-            // Check if we should show the settings dialog
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.READ_MEDIA_IMAGES)) {
-                    showSettingsDialog("Storage")
-                } else {
-                    Toast.makeText(this, R.string.storage_permissions_required, Toast.LENGTH_SHORT)
-                        .show()
-                }
+            // Re-enable buttons if permission is denied.
+            enableButtons()
+            val permissionToCheck = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Manifest.permission.READ_MEDIA_IMAGES
             } else {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
-                    showSettingsDialog("Storage")
-                } else {
-                    Toast.makeText(this, R.string.storage_permissions_required, Toast.LENGTH_SHORT)
-                        .show()
-                }
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            }
+            if (!shouldShowRequestPermissionRationale(permissionToCheck)) {
+                showSettingsDialog("Storage")
+            } else {
+                Toast.makeText(this, R.string.storage_permissions_required, Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // Flag to track which button triggered the storage permission request
+    // Flag to track which button triggered the storage permission request.
     private var fromCameraButton = false
 
     // Image picker
@@ -84,11 +82,11 @@ class SelectionActivity : AppCompatActivity() {
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // Start EditImageActivity with the selected image URI
             val intent = Intent(this, EditActivity::class.java)
-            intent.putExtra(Constans.KEY_DATA_IMG, uri)
+            intent.putExtra(EditActivity.EXTRA_IMAGE_URI, it)
             startActivity(intent)
         }
+        // Buttons are re-enabled in onResume.
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,32 +94,40 @@ class SelectionActivity : AppCompatActivity() {
         binding = ActivitySelectionBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Set up click listeners for the buttons
         binding.cameraButton.setOnClickListener {
+            disableButtons()
             fromCameraButton = true
             checkCameraPermission()
         }
 
         binding.editImageButton.setOnClickListener {
+            disableButtons()
             fromCameraButton = false
             checkStoragePermissions()
         }
     }
 
-    private fun checkCameraPermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this,
-                CAMERA_PERMISSION
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                // Camera permission already granted, now check storage
-                checkStoragePermissionsForCamera()
-            }
+    override fun onResume() {
+        super.onResume()
+        // Re-enable buttons whenever the user returns to this screen.
+        enableButtons()
+    }
 
-            else -> {
-                // Request camera permission
-                cameraPermissionLauncher.launch(CAMERA_PERMISSION)
-            }
+    private fun disableButtons() {
+        binding.cameraButton.isEnabled = false
+        binding.editImageButton.isEnabled = false
+    }
+
+    private fun enableButtons() {
+        binding.cameraButton.isEnabled = true
+        binding.editImageButton.isEnabled = true
+    }
+
+    private fun checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, CAMERA_PERMISSION) == PackageManager.PERMISSION_GRANTED) {
+            checkStoragePermissionsForCamera()
+        } else {
+            cameraPermissionLauncher.launch(CAMERA_PERMISSION)
         }
     }
 
@@ -177,16 +183,18 @@ class SelectionActivity : AppCompatActivity() {
             .setTitle(R.string.permission_required_title)
             .setMessage(getString(R.string.permission_required_message, permissionType))
             .setPositiveButton(R.string.go_to_settings) { _, _ ->
-                // Open app settings
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                 val uri = Uri.fromParts("package", packageName, null)
                 intent.data = uri
                 startActivity(intent)
             }
             .setNegativeButton(R.string.cancel) { dialog, _ ->
+                enableButtons()
                 dialog.dismiss()
             }
-            .setCancelable(false)
+            .setOnCancelListener {
+                enableButtons()
+            }
             .show()
     }
-} 
+}

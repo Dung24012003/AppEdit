@@ -1,8 +1,8 @@
 package com.example.dungappedit.ui.edit.tools
 
 interface BaseToolManager {
-  fun activate()      // show UI controls, enable tool behavior
-  fun deactivate()    // hide UI, disable tool
-  fun isToolActive(): Boolean // check if the tool is currently active
-  fun applyChanges()  // commit edits to underlying image/layers
-} 
+  fun activate()      // Activates the tool, showing its UI and enabling its behavior.
+  fun deactivate()    // Deactivates the tool, hiding its UI.
+  fun isToolActive(): Boolean // Returns true if the tool is currently active.
+  fun applyChanges()  // Applies any pending changes to the image.
+}

@@ -17,7 +17,7 @@ import kotlin.collections.all
  * Utility class for handling permissions in the app
  */
 object PermissionUtils {
-    
+
     // Camera and storage permission constants
     val CAMERA_PERMISSIONS = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayOf(
@@ -30,13 +30,13 @@ object PermissionUtils {
             Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
     }
-    
+
     val STORAGE_PERMISSIONS = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
     } else {
         arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
-    
+
     /**
      * Check if all required permissions are granted
      */
@@ -45,14 +45,14 @@ object PermissionUtils {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
     }
-    
+
     /**
      * Check if camera permissions are granted
      */
     fun hasCameraPermissions(context: Context): Boolean {
         return hasAllPermissions(context, CAMERA_PERMISSIONS)
     }
-    
+
     /**
      * Check if storage permissions are granted
      */
@@ -69,12 +69,12 @@ object PermissionUtils {
             ) == PackageManager.PERMISSION_GRANTED
         }
     }
-    
+
     /**
      * Show settings dialog when permission is permanently denied
      */
-    fun showSettingsDialog(fragment: Fragment, title: String = "Permission Required", 
-                          message: String = "Permission is required for this feature. Please enable it in app settings.") {
+    fun showSettingsDialog(fragment: Fragment, title: String = "Permission Required",
+                           message: String = "Permission is required for this feature. Please enable it in app settings.") {
         AlertDialog.Builder(fragment.requireContext())
             .setTitle(title)
             .setMessage(message)
@@ -91,14 +91,14 @@ object PermissionUtils {
             .setCancelable(false)
             .show()
     }
-    
+
     /**
      * Check if user has permanently denied a permission and should be shown a settings dialog
      */
     fun shouldShowSettingsDialog(fragment: Fragment, permission: String): Boolean {
         return !fragment.shouldShowRequestPermissionRationale(permission)
     }
-    
+
     /**
      * Request camera permissions and handle the result
      */
@@ -110,7 +110,7 @@ object PermissionUtils {
             permissionLauncher.launch(CAMERA_PERMISSIONS)
         }
     }
-    
+
     /**
      * Request storage permissions and handle the result
      */
@@ -122,7 +122,7 @@ object PermissionUtils {
             permissionLauncher.launch(STORAGE_PERMISSIONS)
         }
     }
-    
+
     /**
      * Get the appropriate storage permission based on Android version
      */

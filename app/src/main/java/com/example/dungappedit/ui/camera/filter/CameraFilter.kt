@@ -76,19 +76,19 @@ enum class CameraFilter {
                 GPUImageFilterGroup().apply {
                     addFilter(GPUImageContrastFilter(1.2f))
 
-                    // Chuyển ảnh thành đen trắng
+                    // Convert image to grayscale
                     addFilter(GPUImageGrayscaleFilter())
 
-                    // Hiệu ứng vẽ bút chì
+                    // Pencil sketch effect
                     addFilter(GPUImageSketchFilter())
 
-                    // Tăng độ tương phản cho nét vẽ rõ hơn
+                    // Increase contrast for sharper lines
                     addFilter(GPUImageContrastFilter(1.6f))
 
-                    // Tăng độ sáng nhẹ để hiện chi tiết vùng tối
+                    // Slightly increase brightness to show details in dark areas
                     addFilter(GPUImageBrightnessFilter(0.05f))
 
-                    // Ma trận màu làm sắc nét đường nét
+                    // Color matrix to sharpen lines
                     addFilter(
                         GPUImageColorMatrixFilter(
                             1.0f, floatArrayOf(
@@ -110,10 +110,10 @@ enum class CameraFilter {
                         0.1f,
                         0.7f
                     )
-                ) // Viền tối nhẹ
-                addFilter(GPUImageBrightnessFilter(0.05f))  // Tăng sáng nhẹ
-                addFilter(GPUImageContrastFilter(1.1f))     // Tăng tương phản nhẹ
-                addFilter(GPUImageSaturationFilter(0.85f))  // Giảm độ bão hòa một chút cho dịu màu
+                ) // Soft vignette
+                addFilter(GPUImageBrightnessFilter(0.05f))  // Slight brightness increase
+                addFilter(GPUImageContrastFilter(1.1f))     // Slight contrast increase
+                addFilter(GPUImageSaturationFilter(0.85f))  // Slightly desaturate for a calmer look
             }
 
         }

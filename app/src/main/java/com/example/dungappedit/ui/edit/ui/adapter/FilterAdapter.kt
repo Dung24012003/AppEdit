@@ -16,7 +16,7 @@ class FilterAdapter(
 ) : RecyclerView.Adapter<FilterAdapter.FilterViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FilterViewHolder {
-        // This layout needs to be created, e.g., res/layout/item_filter.xml
+        // Inflate the item layout for the filter preview.
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_filter, parent, false)
         return FilterViewHolder(view)
     }
@@ -24,6 +24,7 @@ class FilterAdapter(
     override fun onBindViewHolder(holder: FilterViewHolder, position: Int) {
         val filter = filters[position]
         holder.filterName.text = filter.name
+        // Apply the filter's color matrix to the preview image.
         holder.filterPreview.colorFilter = ColorMatrixColorFilter(filter.matrix)
         holder.itemView.setOnClickListener { onFilterClick(filter) }
     }

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -41,6 +42,8 @@ android {
 
 dependencies {
 
+    implementation ("com.google.mlkit:face-detection:16.1.6")
+
     implementation ("com.github.yalantis:ucrop:2.2.8-native")
     implementation ("com.github.Dhaval2404:ColorPicker:2.3")
 
@@ -60,6 +63,9 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
 
     implementation ("androidx.fragment:fragment-ktx:1.5.7")
+    
+    // Add ExifInterface for image orientation handling
+    implementation ("androidx.exifinterface:exifinterface:1.3.6")
 
     implementation ("jp.co.cyberagent.android:gpuimage:2.1.0")
 
