@@ -1,15 +1,16 @@
 package com.example.dungappedit.ui.edit.fragment
 
 import android.app.Activity
-import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -22,23 +23,26 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.dungappedit.R
+import com.example.dungappedit.canvas.DrawOnImageView
 import com.example.dungappedit.databinding.FragmentEditHostBinding
 import com.example.dungappedit.ui.edit.tools.BaseToolManager
 import com.example.dungappedit.ui.edit.tools.CropToolManager
 import com.example.dungappedit.ui.edit.tools.DrawToolManager
 import com.example.dungappedit.ui.edit.tools.FilterToolManager
 import com.example.dungappedit.ui.edit.tools.FrameToolManager
+import com.example.dungappedit.ui.edit.tools.HueToolManager
 import com.example.dungappedit.ui.edit.tools.StickerToolManager
 import com.example.dungappedit.ui.edit.tools.TextToolManager
 import com.example.dungappedit.ui.edit.utils.ImageLayerController
-import com.google.android.material.tabs.TabLayout
+import com.example.dungappedit.ui.edit.utils.ImageOrientationUtil
 import com.yalantis.ucrop.UCrop
 
-class EditHostFragment : Fragment() {
+class EditHostFragment : Fragment(), DrawOnImageView.OnImageDimensionsChangedListener {
 
     private var _binding: FragmentEditHostBinding? = null
     private val binding get() = _binding!!
 
+    // Managers
     private lateinit var imageLayerController: ImageLayerController
     private lateinit var frameToolManager: FrameToolManager
     private lateinit var cropToolManager: CropToolManager
@@ -46,264 +50,328 @@ class EditHostFragment : Fragment() {
     private lateinit var stickerToolManager: StickerToolManager
     private lateinit var drawToolManager: DrawToolManager
     private lateinit var textToolManager: TextToolManager
+    private lateinit var hueToolManager: HueToolManager
 
     private var activeTool: BaseToolManager? = null
 
-    // Enum to identify which tool is selected from the tools recycler
-    private enum class ToolType {
-        CROP, STICKER, DRAW, TEXT
-    }
-
-    // A simple data class to represent a tool
+    // Tool Menu
+    private enum class ToolType { CROP, STICKER, DRAW, TEXT, HUE }
     private data class Tool(val name: String, val icon: Int, val type: ToolType)
-
     private val toolsAdapter by lazy {
-        ToolsAdapter(
-            listOf(
-                Tool("Crop", android.R.drawable.ic_menu_crop, ToolType.CROP),
-                Tool("Sticker", android.R.drawable.ic_menu_add, ToolType.STICKER),
-                Tool("Draw", android.R.drawable.ic_menu_edit, ToolType.DRAW),
-                Tool("Text", android.R.drawable.ic_menu_agenda, ToolType.TEXT)
-            )
-        ) { tool -> onToolSelected(tool.type) }
+        ToolsAdapter(listOf(
+            Tool("Crop", R.drawable.crop, ToolType.CROP),
+            Tool("Sticker", R.drawable.addstikcer, ToolType.STICKER),
+            Tool("Draw", R.drawable.pen, ToolType.DRAW),
+            Tool("Text", R.drawable.addtext, ToolType.TEXT),
+            Tool("Hue", R.drawable.hue_icon, ToolType.HUE)
+        )) { tool -> onToolSelected(tool.type) }
     }
+
+    // State Machine
+    private enum class State {
+        NONE, FRAME, TOOL_MENU, TOOL_STICKER, TOOL_DRAW, FILTER, TOOL_HUE
+    }
+    private var currentState: State = State.NONE
 
     companion object {
         private const val ARG_IMAGE_URI = "image_uri"
-
         fun newInstance(imageUri: Uri): EditHostFragment {
-            val fragment = EditHostFragment()
-            val args = Bundle()
-            args.putParcelable(ARG_IMAGE_URI, imageUri)
-            fragment.arguments = args
-            return fragment
+            return EditHostFragment().apply {
+                arguments = Bundle().apply { putParcelable(ARG_IMAGE_URI, imageUri) }
+            }
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEditHostBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupManagersAndListeners()
+        loadImageFromArgs()
+        setState(State.FRAME)
+    }
 
+    private fun setupManagersAndListeners() {
         imageLayerController = ImageLayerController(binding.hostView)
+        binding.drawView.setOnImageDimensionsChangedListener(this)
 
-        // Setup ToolManagers with views from the fragment's layout
-        binding.frameToolRecycler.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        frameToolManager =
-            FrameToolManager(binding.frameToolRecycler, imageLayerController, viewLifecycleOwner.lifecycleScope)
+        frameToolManager = FrameToolManager(binding.frameToolRecycler, imageLayerController, viewLifecycleOwner.lifecycleScope).also {
+            binding.frameToolRecycler.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        }
 
-        binding.filterToolRecycler.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        filterToolManager = FilterToolManager(binding.filterToolRecycler, imageLayerController)
+        // Initialize both managers
+        hueToolManager = HueToolManager(binding.hueSaturationControls, binding.seekbarHue, binding.seekbarSaturation, binding.drawView)
+        filterToolManager = FilterToolManager(binding.filterToolRecycler, binding.drawView).also {
+            binding.filterToolRecycler.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        }
 
-        binding.stickerToolRecycler.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        stickerToolManager =
-            StickerToolManager(requireContext(), binding.stickerToolRecycler, imageLayerController)
+        // Connect the managers bidirectionally
+        filterToolManager.setHueToolManager(hueToolManager)
+        hueToolManager.setFilterToolManager(filterToolManager)
 
-        drawToolManager = DrawToolManager(binding.drawView, binding.drawControls)
-        textToolManager = TextToolManager(binding.drawView)
+        stickerToolManager = StickerToolManager(requireContext(), binding.stickerToolRecycler, binding.drawView).also {
+            binding.stickerToolRecycler.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        }
+        drawToolManager = DrawToolManager(binding.drawView, binding.drawControls).apply {
+            setupListeners(binding.btnDrawColor, binding.seekbarBrushSize, binding.btnEraser, binding.btnClearDrawing)
+        }
+        textToolManager = TextToolManager(binding.drawView).also {
+            binding.drawView.setOnTextEditRequestListener(it::editText)
+        }
+        cropToolManager = CropToolManager(this, binding.drawView, filterToolManager)
 
-        // Setup tools recycler
-        binding.toolsRecycler.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        binding.toolsRecycler.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         binding.toolsRecycler.adapter = toolsAdapter
+    }
 
-        // Setup listeners for tools
-        drawToolManager.setupListeners(
-            binding.btnDrawColor,
-            binding.seekbarBrushSize,
-            binding.btnEraser,
-            binding.btnClearDrawing
-        )
-
-        cropToolManager = CropToolManager(
-            this,
-            binding.drawView,
-            imageLayerController
-        )
-
-        // Default to showing frames
-        showFrames()
-
+    private fun loadImageFromArgs() {
         val imageUri = arguments?.getParcelable<Uri>(ARG_IMAGE_URI)
-        Log.d("ImageURI", imageUri.toString())
-
         imageUri?.let { uri ->
             binding.drawView.post {
-                val inputStream = requireContext().contentResolver.openInputStream(uri)
-                val bitmap = BitmapFactory.decodeStream(inputStream)
-                inputStream?.close()
-                binding.drawView.setBackgroundBitmap(bitmap)
+                try {
+                    // Use our utility to load the bitmap with correct orientation
+                    val bitmap = ImageOrientationUtil.loadBitmapWithCorrectOrientation(
+                        requireContext().contentResolver, uri
+                    )
 
-                // Now that the image is set and the view is laid out, start preloading the frames
-                frameToolManager.preloadFrames()
+                    if (bitmap != null) {
+                        binding.drawView.setBackgroundBitmap(bitmap)
+                        frameToolManager.preloadFrames()
+                    } else {
+                        // Fallback to old method if our utility fails
+                        Log.e("EditHostFragment", "Failed to load image with orientation correction, trying fallback")
+                        val inputStream = requireContext().contentResolver.openInputStream(uri)
+                        val fallbackBitmap = BitmapFactory.decodeStream(inputStream)
+                        inputStream?.close()
+                        binding.drawView.setBackgroundBitmap(fallbackBitmap)
+                        frameToolManager.preloadFrames()
+                    }
+                } catch (e: Exception) {
+                    Log.e("EditHostFragment", "Error loading image: ${e.message}")
+                    Toast.makeText(requireContext(), "Error loading image", Toast.LENGTH_SHORT).show()
+                }
             }
             cropToolManager.setSourceUri(uri)
         }
+    }
 
-        // Set listener for when a text item is tapped to be edited
-        binding.drawView.setOnTextEditRequestListener { textItem ->
-            textToolManager.editText(textItem)
+    override fun onImageDimensionsChanged(left: Float, top: Float, right: Float, bottom: Float, width: Int, height: Int) {
+        imageLayerController.updateFrameBounds()
+    }
+
+    // Handle events from Activity
+    fun onTabSelected(position: Int) {
+        val requestedState = stateFromPosition(position)
+        if (stateFromPosition(position) != currentState) {
+            setState(requestedState)
         }
     }
 
-    fun handleTabSelection(position: Int) {
-        when (position) {
-            0 -> showFrames()
-            1 -> showTools()
-            2 -> showFilters()
+    fun onTabUnselected(position: Int) {
+        if (currentState != State.NONE) {
+            setState(State.NONE)
         }
     }
 
-    private fun showFrames() {
-        hideAllToolContainers()
-        binding.frameToolRecycler.visibility = View.VISIBLE
-        setActiveTool(frameToolManager)
+    fun onTabReselected(position: Int) {
+        val requestedState = stateFromPosition(position)
+
+        when {
+            (currentState == State.TOOL_STICKER || currentState == State.TOOL_DRAW) && requestedState == State.TOOL_MENU -> {
+                setState(State.TOOL_MENU)
+            }
+            currentState == requestedState -> {
+                setState(State.NONE)
+            }
+            else -> {
+                setState(requestedState)
+            }
+        }
     }
 
-    private fun showTools() {
-        hideAllToolContainers()
-        // Here you would show a list of tools like Crop, Draw, Text, Sticker
-        binding.toolsRecycler.visibility = View.VISIBLE
-        setActiveTool(null) // No specific tool is active until one is chosen
+    private fun onToolSelected(toolType: ToolType) {
+        when (toolType) {
+            ToolType.CROP -> {
+                cropToolManager.activate()
+            }
+            ToolType.TEXT -> {
+                textToolManager.activate()
+            }
+            ToolType.STICKER -> setState(State.TOOL_STICKER)
+            ToolType.DRAW -> setState(State.TOOL_DRAW)
+            ToolType.HUE -> setState(State.TOOL_HUE)
+        }
     }
 
-    private fun showFilters() {
-        hideAllToolContainers()
-        binding.filterToolRecycler.visibility = View.VISIBLE
-        setActiveTool(filterToolManager)
+    private fun setState(newState: State) {
+        // Deactivate current tool
+        activeTool?.deactivate()
+        activeTool = null
+
+        hideAllContainers()
+
+        currentState = newState
+
+        when (currentState) {
+            State.NONE -> { /* All containers are hidden */ }
+            State.FRAME -> {
+                binding.frameToolRecycler.visibility = View.VISIBLE
+                activeTool = frameToolManager
+            }
+            State.TOOL_MENU -> {
+                binding.toolsRecycler.visibility = View.VISIBLE
+            }
+            State.TOOL_STICKER -> {
+                binding.stickerToolRecycler.visibility = View.VISIBLE
+                activeTool = stickerToolManager
+            }
+            State.TOOL_DRAW -> {
+                binding.drawControls.visibility = View.VISIBLE
+                activeTool = drawToolManager
+            }
+            State.FILTER -> {
+                binding.filterToolRecycler.visibility = View.VISIBLE
+                activeTool = filterToolManager
+            }
+            State.TOOL_HUE -> {
+                binding.hueSaturationControls.visibility = View.VISIBLE
+                activeTool = hueToolManager
+            }
+        }
+
+        // Activate the new tool
+        activeTool?.activate()
+
+        // Note: We don't need special handling here anymore since both
+        // FilterToolManager and HueToolManager now have references to each other
+        // and will preserve each other's effects when activated
     }
 
-    private fun hideAllToolContainers() {
+    private fun hideAllContainers() {
         binding.frameToolRecycler.visibility = View.GONE
         binding.filterToolRecycler.visibility = View.GONE
         binding.stickerToolRecycler.visibility = View.GONE
         binding.drawControls.visibility = View.GONE
         binding.toolsRecycler.visibility = View.GONE
+        binding.hueSaturationControls.visibility = View.GONE
     }
 
-    private fun onToolSelected(toolType: ToolType) {
-        hideAllToolContainers() // Hide everything first
-
-        when (toolType) {
-            ToolType.CROP -> {
-                binding.toolsRecycler.visibility = View.VISIBLE // Reshow tool list for CROP
-                cropToolManager.activate() // This will start the crop intent
-                setActiveTool(cropToolManager)
-            }
-
-            ToolType.STICKER -> {
-                binding.stickerToolRecycler.visibility = View.VISIBLE
-                setActiveTool(stickerToolManager)
-
-            }
-
-            ToolType.DRAW -> {
-                binding.drawControls.visibility = View.VISIBLE
-                setActiveTool(drawToolManager)
-            }
-
-            ToolType.TEXT -> {
-                setActiveTool(textToolManager)
-            }
+    private fun stateFromPosition(position: Int): State {
+        return when (position) {
+            0 -> State.FRAME
+            1 -> State.TOOL_MENU
+            2 -> State.FILTER
+            else -> State.NONE
         }
     }
 
-    private fun setActiveTool(tool: BaseToolManager?) {
-        activeTool?.deactivate()
-        activeTool = tool
-        activeTool?.activate()
-    }
-
+    // Handle events from Activity
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK && requestCode == UCrop.REQUEST_CROP) {
-            val resultUri = data?.let { UCrop.getOutput(it) }
-            if (resultUri != null) {
-                cropToolManager.handleCropResult(resultUri)
+
+        if (requestCode == UCrop.REQUEST_CROP) {
+            // We need to reset the CropToolManager state whether the crop was successful, failed, or canceled
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                val resultUri = UCrop.getOutput(data)
+                if (resultUri != null) {
+                    cropToolManager.handleCropResult(resultUri)
+                    // After cropping, we can return to the main tool menu
+                    setState(State.TOOL_MENU)
+                } else {
+                    Toast.makeText(requireContext(), "Failed to get crop result", Toast.LENGTH_SHORT).show()
+                    cropToolManager.deactivate() // Reset state on error
+                }
+            } else if (resultCode == UCrop.RESULT_ERROR) {
+                val cropError = data?.let { UCrop.getError(it) }
+                Toast.makeText(requireContext(), "Crop error: ${cropError?.message}", Toast.LENGTH_SHORT).show()
+                cropToolManager.deactivate() // Reset state on error
             } else {
-                Toast.makeText(requireContext(), "Failed to retrieve cropped image.", Toast.LENGTH_SHORT).show()
+                // User pressed "X" or the Back button to cancel
+                cropToolManager.deactivate() // Important: Reset state on user cancellation
             }
-        } else if (resultCode == UCrop.RESULT_ERROR) {
-            val cropError = data?.let { UCrop.getError(it) }
-            Toast.makeText(requireContext(), "Crop error: ${cropError?.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
         activeTool?.deactivate()
-        activeTool = null
+        _binding = null
     }
 
-    private fun saveBitmapToFile(bitmap: Bitmap) {
-        val context = requireContext()
-        val timestamp = System.currentTimeMillis()
-        val fileName = "IMG_$timestamp.png"
+    fun captureEdits(): Bitmap? {
+        binding.drawView.clearSelection()
+        val originalBitmap = binding.drawView.getOriginalBitmap() ?: return null
+        val resultBitmap = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(resultBitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-                put(MediaStore.MediaColumns.IS_PENDING, 1)
-            }
+        // Get filter matrix if any
+        val activeFilter = filterToolManager.getActiveFilter()
+        val filterMatrix = activeFilter?.let { if (it.name != "None") it.matrix else null }
+
+        // Combine filter with hue/saturation adjustments if any
+        val combinedMatrix = hueToolManager.combineWithFilterMatrix(filterMatrix)
+
+        // Apply the combined color filter
+        if (combinedMatrix != null) {
+            paint.colorFilter = ColorMatrixColorFilter(combinedMatrix)
         }
 
-        val resolver = context.contentResolver
-        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        // Draw the bitmap with the combined effects
+        canvas.drawBitmap(originalBitmap, 0f, 0f, paint)
 
-        uri?.let {
-            try {
-                resolver.openOutputStream(it)?.use { outputStream ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                }
+        val matrix = Matrix()
+        val srcRect = RectF(binding.drawView.imageRectLeft, binding.drawView.imageRectTop, binding.drawView.imageRectRight, binding.drawView.imageRectBottom)
+        val dstRect = RectF(0f, 0f, originalBitmap.width.toFloat(), originalBitmap.height.toFloat())
+        if (srcRect.width() > 0 && srcRect.height() > 0) {
+            matrix.setRectToRect(srcRect, dstRect, Matrix.ScaleToFit.CENTER)
+        }
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    contentValues.clear()
-                    contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
-                    resolver.update(it, contentValues, null, null)
-                }
+        binding.drawView.drawLayers(canvas, matrix)
 
-                Toast.makeText(context, "Image saved to gallery", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
-            }
+        val activeFrame = frameToolManager.getActiveFrameBitmap()
+        if (activeFrame != null) {
+            val scaledFrame = Bitmap.createScaledBitmap(activeFrame, originalBitmap.width, originalBitmap.height, true)
+            canvas.drawBitmap(scaledFrame, 0f, 0f, null)
+            scaledFrame.recycle()
+        }
+
+        // The orientation is already corrected when loading the image,
+        // so the resultBitmap will have the correct orientation
+        return resultBitmap
+    }
+
+    fun resetToOriginal() {
+        drawToolManager.clearDrawing()
+        stickerToolManager.removeAllStickers()
+        frameToolManager.removeFrame()
+        filterToolManager.applyOriginalFilter()
+        hueToolManager.resetHueAndSaturation()
+    }
+
+    fun updateImage(bitmap: Bitmap?) {
+        bitmap?.let {
+            resetToOriginal()
+            binding.drawView.setBackgroundBitmap(it)
         }
     }
 
-    // Inner class for the tools adapter
     private inner class ToolsAdapter(
         private val tools: List<Tool>,
         private val onToolClick: (Tool) -> Unit
     ) : RecyclerView.Adapter<ToolsAdapter.ToolViewHolder>() {
-
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ToolViewHolder {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_tool, parent, false)
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_tool, parent, false)
             return ToolViewHolder(view)
         }
-
-        override fun onBindViewHolder(holder: ToolViewHolder, position: Int) {
-            holder.bind(tools[position])
-        }
-
+        override fun onBindViewHolder(holder: ToolViewHolder, position: Int) = holder.bind(tools[position])
         override fun getItemCount() = tools.size
-
         inner class ToolViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             private val icon: ImageView = itemView.findViewById(R.id.tool_icon)
             private val name: TextView = itemView.findViewById(R.id.tool_name)
-
             fun bind(tool: Tool) {
                 icon.setImageResource(tool.icon)
                 name.text = tool.name
@@ -311,4 +379,4 @@ class EditHostFragment : Fragment() {
             }
         }
     }
-} 
+}

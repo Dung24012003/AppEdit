@@ -10,16 +10,16 @@
     <androidx.cardview.widget.CardView
         android:layout_width="@dimen/filter_preview_size"
         android:layout_height="@dimen/filter_preview_size"
+        app:cardBackgroundColor="@color/transparent"
         app:cardCornerRadius="@dimen/distance_corner_radius_35dp"
-        app:cardElevation="@dimen/distance_0dp"
-        app:cardBackgroundColor="@color/transparent">
+        app:cardElevation="@dimen/distance_0dp">
 
         <ImageView
             android:id="@+id/filter_preview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:contentDescription="@string/filter_normal" />
+            android:contentDescription="@string/filter_normal"
+            android:scaleType="centerCrop" />
 
         <View
             android:id="@+id/filter_border"

@@ -11,11 +11,11 @@
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edit_text_input"
+            android.gravity="top"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/text_editor_enter_text"
             android:inputType="textMultiLine"
-            android.gravity="top"
             android:minLines="3" />
     </com.google.android.material.textfield.TextInputLayout>
 

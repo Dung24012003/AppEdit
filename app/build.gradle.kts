@@ -63,11 +63,13 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
 
     implementation ("androidx.fragment:fragment-ktx:1.5.7")
-    
+
     // Add ExifInterface for image orientation handling
     implementation ("androidx.exifinterface:exifinterface:1.3.6")
 
     implementation ("jp.co.cyberagent.android:gpuimage:2.1.0")
+
+    implementation ("com.github.bumptech.glide:glide:4.16.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

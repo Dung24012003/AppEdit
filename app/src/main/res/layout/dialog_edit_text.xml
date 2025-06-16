@@ -14,27 +14,27 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="@string/text_editor_title"
-            app:navigationIcon="@drawable/ic_close" />
+            app:navigationIcon="@drawable/ic_close"
+            app:title="@string/text_editor_title" />
 
         <com.example.dungappedit.ui.edit.text.StrokeTextView
             android:id="@+id/textPreview"
             android:layout_width="match_parent"
             android:layout_height="180dp"
-            android:gravity="center"
-            android:text="Sample Text"
-            android:textSize="32sp"
-            android:padding="16dp"
+            android:layout_marginBottom="8dp"
             android:background="?attr/colorSurface"
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="Sample Text"
             android:textColor="?attr/colorOnSurface"
-            android:layout_marginBottom="8dp"/>
+            android:textSize="32sp" />
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/text_edit_tabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:tabMode="scrollable"
-            app:tabGravity="fill"/>
+            app:tabGravity="fill"
+            app:tabMode="scrollable" />
 
     </com.google.android.material.appbar.AppBarLayout>
 

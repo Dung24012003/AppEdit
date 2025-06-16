@@ -10,7 +10,6 @@ import android.graphics.DashPathEffect
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PointF
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
@@ -25,9 +24,7 @@ import androidx.core.graphics.withSave
 import com.example.dungappedit.model.MovableItem
 import com.example.dungappedit.model.TextStyle
 import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.min
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 class DrawOnImageView @JvmOverloads constructor(
@@ -111,28 +108,51 @@ class DrawOnImageView @JvmOverloads constructor(
             const val BUTTON_SIZE = 55f
             const val BUTTON_PADDING = 10f
 
-            val DELETE_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.RED; style = Paint.Style.FILL }
-            val DELETE_X_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; style = Paint.Style.STROKE; strokeWidth = 6f }
-            val ROTATE_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.GREEN; style = Paint.Style.FILL }
-            val ROTATE_ICON_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; style = Paint.Style.STROKE; strokeWidth = 6f }
-            val SELECTED_BORDER_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLUE; style = Paint.Style.STROKE; strokeWidth = 2f }
+            val DELETE_PAINT =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.RED; style = Paint.Style.FILL }
+            val DELETE_X_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE; style = Paint.Style.STROKE; strokeWidth = 6f
+            }
+            val ROTATE_PAINT =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.GREEN; style = Paint.Style.FILL }
+            val ROTATE_ICON_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE; style = Paint.Style.STROKE; strokeWidth = 6f
+            }
+            val SELECTED_BORDER_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.BLUE; style = Paint.Style.STROKE; strokeWidth = 2f
+            }
         }
 
         private fun getBounds(item: MovableItem): RectF {
             return when (item) {
                 is MovableItem.TextItem -> item.getBounds()
-                is MovableItem.ImageItem -> RectF(item.x, item.y, item.x + item.bitmap.width, item.y + item.bitmap.height)
+                is MovableItem.ImageItem -> RectF(
+                    item.x,
+                    item.y,
+                    item.x + item.bitmap.width,
+                    item.y + item.bitmap.height
+                )
             }
         }
 
         fun getDeleteButtonRect(item: MovableItem): RectF {
             val bounds = getBounds(item)
-            return RectF(bounds.right - BUTTON_SIZE * 0.75f, bounds.top - BUTTON_SIZE * 0.75f, bounds.right + BUTTON_SIZE * 0.75f, bounds.top + BUTTON_SIZE * 0.75f)
+            return RectF(
+                bounds.right - BUTTON_SIZE * 0.75f,
+                bounds.top - BUTTON_SIZE * 0.75f,
+                bounds.right + BUTTON_SIZE * 0.75f,
+                bounds.top + BUTTON_SIZE * 0.75f
+            )
         }
 
         fun getRotateButtonRect(item: MovableItem): RectF {
             val bounds = getBounds(item)
-            return RectF(bounds.left - BUTTON_SIZE * 0.75f, bounds.bottom - BUTTON_SIZE * 0.75f, bounds.left + BUTTON_SIZE * 0.75f, bounds.bottom + BUTTON_SIZE * 0.75f)
+            return RectF(
+                bounds.left - BUTTON_SIZE * 0.75f,
+                bounds.bottom - BUTTON_SIZE * 0.75f,
+                bounds.left + BUTTON_SIZE * 0.75f,
+                bounds.bottom + BUTTON_SIZE * 0.75f
+            )
         }
 
         fun getSelectionRect(item: MovableItem): RectF {
@@ -152,22 +172,61 @@ class DrawOnImageView @JvmOverloads constructor(
             SELECTED_BORDER_PAINT.strokeWidth = 2f * inverseScale
             canvas.drawRect(getSelectionRect(item), SELECTED_BORDER_PAINT)
             val deleteRect = getDeleteButtonRect(item)
-            canvas.drawCircle(deleteRect.centerX(), deleteRect.centerY(), (BUTTON_SIZE / 2) * inverseScale, DELETE_PAINT)
+            canvas.drawCircle(
+                deleteRect.centerX(),
+                deleteRect.centerY(),
+                (BUTTON_SIZE / 2) * inverseScale,
+                DELETE_PAINT
+            )
             val xSize = (BUTTON_SIZE / 3) * inverseScale
             DELETE_X_PAINT.strokeWidth = 6f * inverseScale
-            canvas.drawLine(deleteRect.centerX() - xSize, deleteRect.centerY() - xSize, deleteRect.centerX() + xSize, deleteRect.centerY() + xSize, DELETE_X_PAINT)
-            canvas.drawLine(deleteRect.centerX() + xSize, deleteRect.centerY() - xSize, deleteRect.centerX() - xSize, deleteRect.centerY() + xSize, DELETE_X_PAINT)
+            canvas.drawLine(
+                deleteRect.centerX() - xSize,
+                deleteRect.centerY() - xSize,
+                deleteRect.centerX() + xSize,
+                deleteRect.centerY() + xSize,
+                DELETE_X_PAINT
+            )
+            canvas.drawLine(
+                deleteRect.centerX() + xSize,
+                deleteRect.centerY() - xSize,
+                deleteRect.centerX() - xSize,
+                deleteRect.centerY() + xSize,
+                DELETE_X_PAINT
+            )
             val rotateRect = getRotateButtonRect(item)
-            canvas.drawCircle(rotateRect.centerX(), rotateRect.centerY(), (BUTTON_SIZE / 2) * inverseScale, ROTATE_PAINT)
+            canvas.drawCircle(
+                rotateRect.centerX(),
+                rotateRect.centerY(),
+                (BUTTON_SIZE / 2) * inverseScale,
+                ROTATE_PAINT
+            )
             val rSize = (BUTTON_SIZE / 2.5f) * inverseScale
             ROTATE_ICON_PAINT.strokeWidth = 6f * inverseScale
-            val oval = RectF(rotateRect.centerX() - rSize, rotateRect.centerY() - rSize, rotateRect.centerX() + rSize, rotateRect.centerY() + rSize)
+            val oval = RectF(
+                rotateRect.centerX() - rSize,
+                rotateRect.centerY() - rSize,
+                rotateRect.centerX() + rSize,
+                rotateRect.centerY() + rSize
+            )
             canvas.drawArc(oval, 45f, 270f, false, ROTATE_ICON_PAINT)
             val arrowEndX = rotateRect.centerX() + rSize * 0.8f
             val arrowEndY = rotateRect.centerY() - rSize * 0.8f
             val arrowHeadSize = rSize * 0.6f
-            canvas.drawLine(arrowEndX, arrowEndY, arrowEndX - arrowHeadSize, arrowEndY, ROTATE_ICON_PAINT)
-            canvas.drawLine(arrowEndX, arrowEndY, arrowEndX, arrowEndY + arrowHeadSize, ROTATE_ICON_PAINT)
+            canvas.drawLine(
+                arrowEndX,
+                arrowEndY,
+                arrowEndX - arrowHeadSize,
+                arrowEndY,
+                ROTATE_ICON_PAINT
+            )
+            canvas.drawLine(
+                arrowEndX,
+                arrowEndY,
+                arrowEndX,
+                arrowEndY + arrowHeadSize,
+                ROTATE_ICON_PAINT
+            )
             canvas.restore()
         }
     }
@@ -200,7 +259,9 @@ class DrawOnImageView @JvmOverloads constructor(
                 clipHighlightPaint.alpha = clipHighlightAlpha
                 invalidate()
                 clipHighlightHandler.postDelayed(this, 16)
-            } else { showClipBoundary = false }
+            } else {
+                showClipBoundary = false
+            }
         }
     }
 
@@ -245,6 +306,7 @@ class DrawOnImageView @JvmOverloads constructor(
                         }
                     }
                 }
+
                 is MovableItem.ImageItem -> {
                     canvas.withSave {
                         val centerX = item.x + item.bitmap.width / 2f
@@ -281,9 +343,21 @@ class DrawOnImageView @JvmOverloads constructor(
         }
         if (showBorder) {
             if (backgroundBitmap != null) {
-                canvas.drawRect(imageRectLeft, imageRectTop, imageRectRight, imageRectBottom, borderPaint)
+                canvas.drawRect(
+                    imageRectLeft,
+                    imageRectTop,
+                    imageRectRight,
+                    imageRectBottom,
+                    borderPaint
+                )
             } else {
-                canvas.drawRect(borderPaint.strokeWidth / 2, borderPaint.strokeWidth / 2, width - borderPaint.strokeWidth / 2, height - borderPaint.strokeWidth / 2, borderPaint)
+                canvas.drawRect(
+                    borderPaint.strokeWidth / 2,
+                    borderPaint.strokeWidth / 2,
+                    width - borderPaint.strokeWidth / 2,
+                    height - borderPaint.strokeWidth / 2,
+                    borderPaint
+                )
             }
         }
     }
@@ -335,6 +409,7 @@ class DrawOnImageView @JvmOverloads constructor(
                 }
                 invalidate()
             }
+
             MotionEvent.ACTION_POINTER_DOWN -> {
                 if (event.pointerCount == 2) {
                     itemToZoom = movableItems.find { it.isSelected }
@@ -349,6 +424,7 @@ class DrawOnImageView @JvmOverloads constructor(
                     }
                 }
             }
+
             MotionEvent.ACTION_MOVE -> {
                 if (isMultiTouch && event.pointerCount >= 2 && itemToZoom != null) {
                     val newDist = spacing(event)
@@ -375,6 +451,7 @@ class DrawOnImageView @JvmOverloads constructor(
                     invalidate()
                 }
             }
+
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 activePointerId = MotionEvent.INVALID_POINTER_ID
                 isMultiTouch = false
@@ -387,7 +464,8 @@ class DrawOnImageView @JvmOverloads constructor(
     }
 
     private fun handleDrawingTouchEvent(event: MotionEvent) {
-        val x = event.x; val y = event.y
+        val x = event.x;
+        val y = event.y
         when (event.action) {
             MotionEvent.ACTION_DOWN -> drawPath.moveTo(x, y)
             MotionEvent.ACTION_MOVE -> {
@@ -397,7 +475,10 @@ class DrawOnImageView @JvmOverloads constructor(
                     drawPath.reset(); drawPath.moveTo(x, y)
                 }
             }
-            MotionEvent.ACTION_UP -> { drawCanvas?.drawPath(drawPath, drawPaint); drawPath.reset() }
+
+            MotionEvent.ACTION_UP -> {
+                drawCanvas?.drawPath(drawPath, drawPaint); drawPath.reset()
+            }
         }
         invalidate()
     }
@@ -406,7 +487,12 @@ class DrawOnImageView @JvmOverloads constructor(
         val matrix = Matrix()
         val bounds = when (item) {
             is MovableItem.TextItem -> item.getBounds()
-            is MovableItem.ImageItem -> RectF(item.x, item.y, item.x + item.bitmap.width, item.y + item.bitmap.height)
+            is MovableItem.ImageItem -> RectF(
+                item.x,
+                item.y,
+                item.x + item.bitmap.width,
+                item.y + item.bitmap.height
+            )
         }
         val centerX = bounds.centerX()
         val centerY = bounds.centerY()
@@ -414,7 +500,12 @@ class DrawOnImageView @JvmOverloads constructor(
         matrix.postScale(item.scale, item.scale, centerX, centerY)
         val deletePoint = floatArrayOf(bounds.right, bounds.top)
         matrix.mapPoints(deletePoint)
-        val deleteHitRect = RectF(deletePoint[0] - ItemControls.BUTTON_SIZE, deletePoint[1] - ItemControls.BUTTON_SIZE, deletePoint[0] + ItemControls.BUTTON_SIZE, deletePoint[1] + ItemControls.BUTTON_SIZE)
+        val deleteHitRect = RectF(
+            deletePoint[0] - ItemControls.BUTTON_SIZE,
+            deletePoint[1] - ItemControls.BUTTON_SIZE,
+            deletePoint[0] + ItemControls.BUTTON_SIZE,
+            deletePoint[1] + ItemControls.BUTTON_SIZE
+        )
         if (deleteHitRect.contains(touchX, touchY)) {
             movableItems.remove(item)
             itemControls.removeAll { it.item == item }
@@ -423,7 +514,12 @@ class DrawOnImageView @JvmOverloads constructor(
         }
         val rotatePoint = floatArrayOf(bounds.left, bounds.bottom)
         matrix.mapPoints(rotatePoint)
-        val rotateHitRect = RectF(rotatePoint[0] - ItemControls.BUTTON_SIZE, rotatePoint[1] - ItemControls.BUTTON_SIZE, rotatePoint[0] + ItemControls.BUTTON_SIZE, rotatePoint[1] + ItemControls.BUTTON_SIZE)
+        val rotateHitRect = RectF(
+            rotatePoint[0] - ItemControls.BUTTON_SIZE,
+            rotatePoint[1] - ItemControls.BUTTON_SIZE,
+            rotatePoint[0] + ItemControls.BUTTON_SIZE,
+            rotatePoint[1] + ItemControls.BUTTON_SIZE
+        )
         if (rotateHitRect.contains(touchX, touchY)) {
             isRotating = true
             itemToRotate = item
@@ -460,7 +556,12 @@ class DrawOnImageView @JvmOverloads constructor(
         for (item in movableItems.asReversed()) {
             val bounds = when (item) {
                 is MovableItem.TextItem -> item.getBounds()
-                is MovableItem.ImageItem -> RectF(item.x, item.y, item.x + item.bitmap.width, item.y + item.bitmap.height)
+                is MovableItem.ImageItem -> RectF(
+                    item.x,
+                    item.y,
+                    item.x + item.bitmap.width,
+                    item.y + item.bitmap.height
+                )
             }
             val inverseMatrix = Matrix()
             Matrix().apply {
@@ -469,20 +570,35 @@ class DrawOnImageView @JvmOverloads constructor(
                 invert(inverseMatrix)
             }
             val touchPoint = floatArrayOf(x, y).also { inverseMatrix.mapPoints(it) }
-            val touchBounds = RectF(bounds).apply { inset(-ItemControls.BUTTON_SIZE / 2, -ItemControls.BUTTON_SIZE / 2) }
+            val touchBounds = RectF(bounds).apply {
+                inset(
+                    -ItemControls.BUTTON_SIZE / 2,
+                    -ItemControls.BUTTON_SIZE / 2
+                )
+            }
             if (touchBounds.contains(touchPoint[0], touchPoint[1])) return item
         }
         return null
     }
 
-    fun enableDrawing(enabled: Boolean) { setEraseMode(false); isDrawingEnabled = enabled }
-    fun setDrawingSize(size: Float) { drawSize = size; drawPaint.strokeWidth = size }
-    fun setPaintColor(color: Int) { setEraseMode(false); isDrawingEnabled = true; drawColor = color; drawPaint.color = drawColor; invalidate() }
+    fun enableDrawing(enabled: Boolean) {
+        setEraseMode(false); isDrawingEnabled = enabled
+    }
+
+    fun setDrawingSize(size: Float) {
+        drawSize = size; drawPaint.strokeWidth = size
+    }
+
+    fun setPaintColor(color: Int) {
+        setEraseMode(false); isDrawingEnabled = true; drawColor = color; drawPaint.color =
+            drawColor; invalidate()
+    }
+
     fun setEraseMode(erase: Boolean) {
         isErasing = erase
         drawPaint.xfermode = if (isErasing) PorterDuffXfermode(PorterDuff.Mode.CLEAR) else null
         drawPaint.strokeWidth = if (isErasing) 50f else drawSize
-        if(!isErasing) drawPaint.color = drawColor
+        if (!isErasing) drawPaint.color = drawColor
     }
 
     fun setBackgroundBitmap(bitmap: Bitmap?) {
@@ -497,12 +613,27 @@ class DrawOnImageView @JvmOverloads constructor(
             imageRectRight = imageRectLeft + scaledWidth
             imageRectBottom = imageRectTop + scaledHeight
             backgroundBitmap = scaledBitmap
-            imageDimensionsListener?.onImageDimensionsChanged(imageRectLeft, imageRectTop, imageRectRight, imageRectBottom, scaledWidth, scaledHeight)
+            imageDimensionsListener?.onImageDimensionsChanged(
+                imageRectLeft,
+                imageRectTop,
+                imageRectRight,
+                imageRectBottom,
+                scaledWidth,
+                scaledHeight
+            )
         } else {
             originalBackgroundBitmap = null
             backgroundBitmap = createBitmap(width, height).apply { eraseColor(Color.WHITE) }
-            imageRectLeft = 0f; imageRectTop = 0f; imageRectRight = width.toFloat(); imageRectBottom = height.toFloat()
-            imageDimensionsListener?.onImageDimensionsChanged(0f, 0f, width.toFloat(), height.toFloat(), width, height)
+            imageRectLeft = 0f; imageRectTop = 0f; imageRectRight =
+                width.toFloat(); imageRectBottom = height.toFloat()
+            imageDimensionsListener?.onImageDimensionsChanged(
+                0f,
+                0f,
+                width.toFloat(),
+                height.toFloat(),
+                width,
+                height
+            )
         }
         canvasBitmap = createBitmap(width, height).apply { eraseColor(Color.TRANSPARENT) }
         drawCanvas = Canvas(canvasBitmap!!)
@@ -514,11 +645,13 @@ class DrawOnImageView @JvmOverloads constructor(
     fun addTextItem(text: String, textStyle: TextStyle? = null) {
         isDrawingEnabled = false; isErasing = false; deselectAllItems()
         val paint = Paint().apply {
-            color = textStyle?.textColor ?: Color.RED; textSize = textStyle?.textSize ?: 60f; isAntiAlias = true
+            color = textStyle?.textColor ?: Color.RED; textSize =
+            textStyle?.textSize ?: 60f; isAntiAlias = true
         }
         val x = imageRectLeft + (imageRectRight - imageRectLeft) / 4
         val y = imageRectTop + (imageRectBottom - imageRectTop) / 2 + paint.textSize / 2
-        val textItem = MovableItem.TextItem(text, x, y, paint, textStyle).apply { scale = 1.0f; isSelected = true }
+        val textItem = MovableItem.TextItem(text, x, y, paint, textStyle)
+            .apply { scale = 1.0f; isSelected = true }
         movableItems.add(textItem)
         selectItem(textItem)
         invalidate()
@@ -526,19 +659,28 @@ class DrawOnImageView @JvmOverloads constructor(
 
     fun addStickerItem(bitmap: Bitmap) {
         isDrawingEnabled = false; isErasing = false; deselectAllItems()
-        val sanitizedBitmap: Bitmap = if (bitmap.width > MAX_STICKER_RESOLUTION || bitmap.height > MAX_STICKER_RESOLUTION) {
-            val scaleRatio = min(MAX_STICKER_RESOLUTION / bitmap.width, MAX_STICKER_RESOLUTION / bitmap.height)
-            bitmap.scale((bitmap.width * scaleRatio).toInt(), (bitmap.height * scaleRatio).toInt(), true)
-        } else {
-            bitmap
-        }
+        val sanitizedBitmap: Bitmap =
+            if (bitmap.width > MAX_STICKER_RESOLUTION || bitmap.height > MAX_STICKER_RESOLUTION) {
+                val scaleRatio = min(
+                    MAX_STICKER_RESOLUTION / bitmap.width,
+                    MAX_STICKER_RESOLUTION / bitmap.height
+                )
+                bitmap.scale(
+                    (bitmap.width * scaleRatio).toInt(),
+                    (bitmap.height * scaleRatio).toInt(),
+                    true
+                )
+            } else {
+                bitmap
+            }
         val targetInitialWidth = 150f
         val initialScale = targetInitialWidth / sanitizedBitmap.width.toFloat()
         val imageCenterX = imageRectLeft + (imageRectRight - imageRectLeft) / 2
         val imageCenterY = imageRectTop + (imageRectBottom - imageRectTop) / 2
         val x = imageCenterX - sanitizedBitmap.width / 2
         val y = imageCenterY - sanitizedBitmap.height / 2
-        val stickerItem = MovableItem.ImageItem(sanitizedBitmap, x, y).apply { scale = initialScale; isSelected = true }
+        val stickerItem = MovableItem.ImageItem(sanitizedBitmap, x, y)
+            .apply { scale = initialScale; isSelected = true }
         movableItems.add(stickerItem)
         selectItem(stickerItem)
         invalidate()
@@ -572,6 +714,7 @@ class DrawOnImageView @JvmOverloads constructor(
                         }
                     }
                 }
+
                 is MovableItem.ImageItem -> {
                     canvas.withSave {
                         val centerX = item.x + item.bitmap.width / 2f
@@ -593,7 +736,12 @@ class DrawOnImageView @JvmOverloads constructor(
         return sqrt(x * x + y * y)
     }
 
-    private fun calculateAngle(centerX: Float, centerY: Float, touchX: Float, touchY: Float): Float {
+    private fun calculateAngle(
+        centerX: Float,
+        centerY: Float,
+        touchX: Float,
+        touchY: Float
+    ): Float {
         val deltaX = touchX - centerX
         val deltaY = touchY - centerY
         var angle = Math.toDegrees(atan2(deltaY.toDouble(), deltaX.toDouble())).toFloat()
@@ -608,10 +756,18 @@ class DrawOnImageView @JvmOverloads constructor(
             setBackgroundBitmap(it.copy(it.config ?: Bitmap.Config.ARGB_8888, true))
         }
     }
-    fun clearDrawings() { canvasBitmap?.eraseColor(Color.TRANSPARENT); invalidate() }
-    fun setOnTextEditRequestListener(listener: (MovableItem.TextItem) -> Unit) { onTextEditRequestListener = listener }
+
+    fun clearDrawings() {
+        canvasBitmap?.eraseColor(Color.TRANSPARENT); invalidate()
+    }
+
+    fun setOnTextEditRequestListener(listener: (MovableItem.TextItem) -> Unit) {
+        onTextEditRequestListener = listener
+    }
+
     fun updateTextItem(textItem: MovableItem.TextItem, textStyle: TextStyle) {
-        textItem.textStyle = textStyle; textItem.text = textStyle.text; textItem.applyStyle(); invalidate()
+        textItem.textStyle = textStyle; textItem.text =
+            textStyle.text; textItem.applyStyle(); invalidate()
     }
 
     private fun moveItemWithConstraints(item: MovableItem, x: Float, y: Float) {
@@ -623,9 +779,15 @@ class DrawOnImageView @JvmOverloads constructor(
         if (backgroundBitmap == null) return
         val itemBounds = when (item) {
             is MovableItem.TextItem -> item.getBounds()
-            is MovableItem.ImageItem -> RectF(item.x, item.y, item.x + item.bitmap.width * item.scale, item.y + item.bitmap.height * item.scale)
+            is MovableItem.ImageItem -> RectF(
+                item.x,
+                item.y,
+                item.x + item.bitmap.width * item.scale,
+                item.y + item.bitmap.height * item.scale
+            )
         }
-        val expandedImageRect = RectF(imageRectLeft - 10, imageRectTop - 10, imageRectRight + 10, imageRectBottom + 10)
+        val expandedImageRect =
+            RectF(imageRectLeft - 10, imageRectTop - 10, imageRectRight + 10, imageRectBottom + 10)
         if (!expandedImageRect.contains(itemBounds)) {
             showClipBoundary = true; clipHighlightAlpha = 180
             clipHighlightHandler.removeCallbacks(clipHighlightRunnable)

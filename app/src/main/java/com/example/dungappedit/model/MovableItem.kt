@@ -93,10 +93,10 @@ sealed class MovableItem {
             val top = y + fontMetrics.ascent
             // The baseline of the last line is at y + (lines.size - 1) * paint.fontSpacing
             val bottom = y + ((lines.size - 1) * paint.fontSpacing) + fontMetrics.descent
-            
+
             val left = x
             val right = x + maxWidth
-            
+
             return RectF(left, top, right, bottom)
         }
 
@@ -107,7 +107,7 @@ sealed class MovableItem {
             textStyle?.let { style ->
                 // Save canvas state
                 canvas.save()
-                
+
                 // Get unscaled bounds to calculate the center for transformations
                 val bounds = getBounds()
                 val centerX = bounds.centerX()
@@ -131,17 +131,27 @@ sealed class MovableItem {
                         strokePaint.color = style.strokeColor
                         // Apply shadow from original paint if enabled
                         if (style.isShadowEnabled) {
-                            strokePaint.setShadowLayer(style.shadowRadius, style.shadowDx, style.shadowDy, style.shadowColor)
+                            strokePaint.setShadowLayer(
+                                style.shadowRadius,
+                                style.shadowDx,
+                                style.shadowDy,
+                                style.shadowColor
+                            )
                         }
                         canvas.drawText(line, x, currentY, strokePaint)
-                        
+
                         // Draw fill
                         val fillPaint = Paint(paint)
                         fillPaint.style = Paint.Style.FILL
                         fillPaint.color = style.textColor
                         // Apply shadow from original paint if enabled
                         if (style.isShadowEnabled) {
-                            fillPaint.setShadowLayer(style.shadowRadius, style.shadowDx, style.shadowDy, style.shadowColor)
+                            fillPaint.setShadowLayer(
+                                style.shadowRadius,
+                                style.shadowDx,
+                                style.shadowDy,
+                                style.shadowColor
+                            )
                         }
                         canvas.drawText(line, x, currentY, fillPaint)
                     } else {
@@ -150,7 +160,7 @@ sealed class MovableItem {
                     }
                     currentY += lineHeight
                 }
-                
+
                 // Restore canvas state
                 canvas.restore()
             }

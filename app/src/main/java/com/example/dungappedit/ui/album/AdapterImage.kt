@@ -7,9 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.dungappedit.ui.album.preview.ImagePreviewActivity
 import com.example.dungappedit.R
 import com.example.dungappedit.common.Constans
+import com.example.dungappedit.ui.album.preview.ImagePreviewActivity
 import java.io.File
 
 class AdapterImage(private val imageFiles: List<File>) :

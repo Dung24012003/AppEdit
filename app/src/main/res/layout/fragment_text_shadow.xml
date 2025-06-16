@@ -17,8 +17,8 @@
         android:id="@+id/shadow_radius_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/text_editor_shadow_radius"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        android:text="@string/text_editor_shadow_radius" />
 
     <SeekBar
         android:id="@+id/shadow_radius_seek_bar"
@@ -30,8 +30,8 @@
         android:id="@+id/shadow_dx_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/text_editor_shadow_dx"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        android:text="@string/text_editor_shadow_dx" />
 
     <SeekBar
         android:id="@+id/shadow_dx_seek_bar"
@@ -43,8 +43,8 @@
         android:id="@+id/shadow_dy_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/text_editor_shadow_dy"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        android:text="@string/text_editor_shadow_dy" />
 
     <SeekBar
         android:id="@+id/shadow_dy_seek_bar"
@@ -56,8 +56,8 @@
         android:id="@+id/shadow_color_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/text_editor_shadow_color"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        android:text="@string/text_editor_shadow_color" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/shadow_color_recycler_view"

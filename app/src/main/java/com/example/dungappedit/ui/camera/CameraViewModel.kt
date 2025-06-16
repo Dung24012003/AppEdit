@@ -20,7 +20,8 @@ class CameraViewModel : ViewModel() {
     }
 
     // List of choices
-    val aspectRatios = listOf("3:4", "9:16", "1:1", "Full") // Add "Full" back as it will be used by ViewPort
+    val aspectRatios =
+        listOf("3:4", "9:16", "1:1", "Full") // Add "Full" back as it will be used by ViewPort
     val timerOptions = listOf(0, 3, 5, 10) // Use Int for easier handling
 
     // Camera and UI state

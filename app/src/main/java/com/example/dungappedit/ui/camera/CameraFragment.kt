@@ -769,7 +769,7 @@ class CameraFragment : Fragment() {
         viewModel.aspectRatios.forEach { ratio ->
             binding.tabRatio.addTab(binding.tabRatio.newTab().setText(ratio))
         }
-        
+
         binding.tabRatio.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 viewModel.setAspectRatio(viewModel.aspectRatios[tab.position])
@@ -789,7 +789,7 @@ class CameraFragment : Fragment() {
                 binding.tabTimer.newTab().setText(if (time == 0) "Tắt" else "${time}s")
             )
         }
-        
+
         binding.tabTimer.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 viewModel.setTimerSeconds(viewModel.timerOptions[tab.position])
