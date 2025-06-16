@@ -6,14 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.edit.EditActivity">
 
-    <!--    <Button-->
-    <!--        android:id="@+id/btnCancel"-->
-    <!--        android:layout_width="wrap_content"-->
-    <!--        android:layout_height="wrap_content"-->
-    <!--        android:text="Cancel"-->
-    <!--        app:layout_constraintEnd_toStartOf="@+id/btnSave"-->
-    <!--        app:layout_constraintTop_toTopOf="@+id/btnSave" />-->
-
     <ImageButton
         android:id="@+id/btnSave"
         android:layout_width="wrap_content"
@@ -24,14 +16,6 @@
         android:text="Save"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <!--    <Button-->
-    <!--        android:id="@+id/btnNext"-->
-    <!--        android:layout_width="wrap_content"-->
-    <!--        android:layout_height="wrap_content"-->
-    <!--        android:text="Next"-->
-    <!--        app:layout_constraintEnd_toEndOf="parent"-->
-    <!--        app:layout_constraintTop_toTopOf="parent" />-->
 
     <FrameLayout
         android:id="@+id/fragment_container"

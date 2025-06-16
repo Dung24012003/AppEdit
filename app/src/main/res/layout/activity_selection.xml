@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -24,43 +25,42 @@
         android:id="@+id/optionsContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/distance_24dp"
         android:orientation="horizontal"
+        android:layout_marginTop="@dimen/distance_24dp"
         android:paddingHorizontal="@dimen/distance_12dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/titleText"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/titleText">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cameraButton"
             android:layout_width="0dp"
             android:layout_height="@dimen/distance_120dp"
-            android:layout_marginHorizontal="@dimen/distance_12dp"
             android:layout_weight="1"
-            app:cardBackgroundColor="@color/indigo"
-            app:cardCornerRadius="@dimen/card_corner_radius">
+            android:layout_marginHorizontal="@dimen/distance_12dp"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardBackgroundColor="@color/indigo">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
                 android:orientation="vertical"
+                android:gravity="center"
                 android:padding="@dimen/distance_16dp">
 
                 <ImageView
                     android:layout_width="@dimen/icon_size"
                     android:layout_height="@dimen/icon_size"
-                    android:contentDescription="@string/camera_icon"
                     android:src="@android:drawable/ic_menu_camera"
-                    app:tint="@color/white" />
+                    android:contentDescription="@string/camera_icon" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/camera"
-                    android:textColor="@color/white"
                     android:textSize="@dimen/size_22sp"
+                    android:textColor="@color/white"
                     android:textStyle="bold" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -69,32 +69,31 @@
             android:id="@+id/editImageButton"
             android:layout_width="0dp"
             android:layout_height="@dimen/distance_120dp"
-            android:layout_marginHorizontal="@dimen/distance_12dp"
             android:layout_weight="1"
-            app:cardBackgroundColor="@color/green"
-            app:cardCornerRadius="@dimen/card_corner_radius">
+            android:layout_marginHorizontal="@dimen/distance_12dp"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardBackgroundColor="@color/green">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
                 android:orientation="vertical"
+                android:gravity="center"
                 android:padding="@dimen/distance_16dp">
 
                 <ImageView
                     android:layout_width="@dimen/icon_size"
                     android:layout_height="@dimen/icon_size"
-                    android:contentDescription="@string/edit_image_icon"
                     android:src="@android:drawable/ic_menu_gallery"
-                    app:tint="@color/white" />
+                    android:contentDescription="@string/edit_image_icon" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/edit_image"
-                    android:textColor="@color/white"
                     android:textSize="@dimen/size_22sp"
+                    android:textColor="@color/white"
                     android:textStyle="bold" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -105,12 +104,12 @@
         android:id="@+id/galleryTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/distance_24dp"
-        android:layout_marginTop="@dimen/distance_24dp"
         android:text="@string/recent_photos"
         android:textColor="@color/white"
         android:textSize="@dimen/size_22sp"
         android:textStyle="bold"
+        android:layout_marginStart="@dimen/distance_24dp"
+        android:layout_marginTop="@dimen/distance_24dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/optionsContainer" />
 
@@ -124,17 +123,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/galleryTitle"
-        tools:listitem="@layout/item_gallery_image" />
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/optionsContainer"
-        tools:visibility="visible" />
+        tools:listitem="@layout/item_gallery_image"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

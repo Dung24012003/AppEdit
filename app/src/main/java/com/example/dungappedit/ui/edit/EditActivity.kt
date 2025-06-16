@@ -40,41 +40,32 @@ class EditActivity : AppCompatActivity() {
     }
 
     private fun handleSave() {
-        binding.btnSave.isEnabled = false // Vô hiệu hóa nút để tránh click nhiều lần
         val bitmapToSave = editHostFragment?.captureEdits()
         if (bitmapToSave != null) {
             try {
                 saveBitmapToGallery(bitmapToSave)
                 Toast.makeText(this, "Image saved successfully", Toast.LENGTH_SHORT).show()
-                finish() // Đóng màn hình chỉnh sửa sau khi lưu thành công
             } catch (e: Exception) {
                 Toast.makeText(this, "Failed to save image: ${e.message}", Toast.LENGTH_SHORT).show()
                 bitmapToSave.recycle()
-                binding.btnSave.isEnabled = true // Kích hoạt lại nút nếu lưu thất bại
             }
         } else {
             Toast.makeText(this, "Failed to capture image for saving.", Toast.LENGTH_SHORT).show()
-            binding.btnSave.isEnabled = true
         }
     }
 
     private fun loadImage() {
-        // Nhận Uri dưới dạng String và chuyển đổi lại để an toàn hơn
-        val uriString = intent.getStringExtra(EXTRA_IMAGE_URI)
-        if (uriString == null) {
+        val imageUri = intent.getParcelableExtra<Uri>(EXTRA_IMAGE_URI)
+        if (imageUri == null) {
             Toast.makeText(this, "No image provided", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
-        val imageUri = Uri.parse(uriString)
 
         try {
             // Use the utility to load the bitmap with correct orientation.
             val bitmap = ImageOrientationUtil.loadBitmapWithCorrectOrientation(contentResolver, imageUri)
             if (bitmap != null) {
-                // Pass a bitmap to fragment might be risky for large images, but let's assume it's handled.
-                // A better approach would be passing the Uri and let the fragment load it.
-                // For now, we will stick to creating a new fragment instance with the Uri.
                 editHostFragment = EditHostFragment.newInstance(imageUri)
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, editHostFragment!!)
@@ -93,9 +84,9 @@ class EditActivity : AppCompatActivity() {
         val fileName = "IMG_$timestamp.jpg"
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpg")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/DungAppEdit")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
         }
@@ -112,32 +103,48 @@ class EditActivity : AppCompatActivity() {
                     resolver.update(it, contentValues, null, null)
                 }
             } catch (e: Exception) {
-                // Nếu có lỗi, xóa bản ghi đã tạo
-                resolver.delete(it, null, null)
                 throw e
             }
         } ?: throw IOException("Failed to create new MediaStore record.")
     }
 
     private fun setupTabLayout() {
-        // Cấu hình cho toolbar chính
-        binding.toolbar.apply {
-            addTab(newTab().setText("Frame"))
-            addTab(newTab().setText("Tool"))
-            addTab(newTab().setText("Filter"))
-            clearOnTabSelectedListeners()
-            addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+        binding.apply {
+            toolbar.addTab(toolbar.newTab().setText("Frame"))
+            toolbar.addTab(toolbar.newTab().setText("Tool"))
+            toolbar.addTab(toolbar.newTab().setText("Filter"))
+
+            toolbar.clearOnTabSelectedListeners()
+            toolbar.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab) {
                     editHostFragment?.onTabSelected(tab.position)
                 }
+
                 override fun onTabUnselected(tab: TabLayout.Tab?) {
                     editHostFragment?.onTabUnselected(tab?.position ?: -1)
                 }
+
                 override fun onTabReselected(tab: TabLayout.Tab) {
                     editHostFragment?.onTabReselected(tab.position)
                 }
             })
-            getTabAt(0)?.select()
+
+            saveOrNo.addTab(saveOrNo.newTab().setIcon(R.drawable.ic_close))
+            saveOrNo.addTab(saveOrNo.newTab().setIcon(R.drawable.ic_check))
+
+            saveOrNo.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+                override fun onTabSelected(tab: TabLayout.Tab) { /* TODO: Implement save/cancel logic */ }
+                override fun onTabUnselected(tab: TabLayout.Tab?) {}
+                override fun onTabReselected(tab: TabLayout.Tab?) {}
+            })
+
+            // Select the first tab by default.
+            toolbar.getTabAt(0)?.select()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // The bitmap is managed by the fragment and DrawOnImageView, no need to recycle here.
     }
 }
