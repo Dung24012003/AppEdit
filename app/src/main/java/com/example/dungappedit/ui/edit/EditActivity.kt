@@ -37,6 +37,9 @@ class EditActivity : AppCompatActivity() {
 
     private fun setupButtons() {
         binding.btnSave.setOnClickListener { handleSave() }
+        binding.toolbarEdit.setNavigationOnClickListener {
+            finish()
+        }
     }
 
     private fun handleSave() {

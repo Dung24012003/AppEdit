@@ -1,4 +1,4 @@
-package com.example.dungappedit.ui.main
+package com.example.dungappedit.ui.album
 
 import android.net.Uri
 import android.view.LayoutInflater

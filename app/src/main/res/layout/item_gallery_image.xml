@@ -5,4 +5,5 @@
     android:layout_height="120dp"
     android:background="?attr/selectableItemBackground"
     android:contentDescription="@string/desc_show_item"
-    android:scaleType="centerCrop" />
+    android:scaleType="centerCrop"
+    android:padding="5dp"/>
