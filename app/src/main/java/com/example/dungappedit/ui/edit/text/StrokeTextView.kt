@@ -14,17 +14,17 @@ class StrokeTextView @JvmOverloads constructor(
     var strokeColorValue: Int = 0
 
     override fun onDraw(canvas: Canvas) {
-        // If stroke is enabled, draw it first
+        // If there is a stroke, draw it first
         if (strokeWidthValue > 0) {
             val originalColor = currentTextColor
-            // Set paint for the stroke
+            // Set the paint for the stroke
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = strokeWidthValue
             setTextColor(strokeColorValue)
             // Draw the stroke
             super.onDraw(canvas)
 
-            // Reset paint for the fill
+            // Reset the paint for the fill
             paint.style = Paint.Style.FILL
             setTextColor(originalColor)
         }

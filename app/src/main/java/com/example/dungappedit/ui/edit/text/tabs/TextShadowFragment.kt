@@ -85,7 +85,7 @@ class TextShadowFragment : Fragment() {
         binding.shadowDxSeekBar.setOnSeekBarChangeListener(seekBarListener)
         binding.shadowDySeekBar.setOnSeekBarChangeListener(seekBarListener)
         
-        // Color picker
+        // Color picker listener
         val adapter = ColorPickerAdapter(colors) { color ->
             textEditorDialog.currentTextStyle.shadowColor = color
             textEditorDialog.updatePreview()

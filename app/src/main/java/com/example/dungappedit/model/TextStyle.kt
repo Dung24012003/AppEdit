@@ -27,4 +27,25 @@ data class TextStyle(
     var shadowRadius: Float = 5f,
     var shadowDx: Float = 5f,
     var shadowDy: Float = 5f
-) : Parcelable
+) : Parcelable {
+    /**
+     * Create a copy of this TextStyle
+     */
+    fun copy(): TextStyle {
+        return TextStyle(
+            text = text,
+            textColor = textColor,
+            textSize = textSize,
+            fontFamily = fontFamily,
+            typeface = typeface,
+            isStrokeEnabled = isStrokeEnabled,
+            strokeColor = strokeColor,
+            strokeWidth = strokeWidth,
+            isShadowEnabled = isShadowEnabled,
+            shadowColor = shadowColor,
+            shadowRadius = shadowRadius,
+            shadowDx = shadowDx,
+            shadowDy = shadowDy
+        )
+    }
+} 

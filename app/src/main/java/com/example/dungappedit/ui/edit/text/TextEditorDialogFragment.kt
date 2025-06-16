@@ -111,7 +111,7 @@ class TextEditorDialogFragment : DialogFragment() {
                 setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
             }
             
-            invalidate()
+            invalidate() // Redraw the view
         }
     }
 } 

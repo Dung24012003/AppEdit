@@ -12,10 +12,10 @@ class TextToolManager(
 ) : BaseToolManager {
 
     override fun activate() {
-        // Deactivate drawing mode to prevent conflicts with text interaction.
+        // Deactivate drawing to prevent conflicts
         drawView.enableDrawing(false)
 
-        // Immediately show the text creation dialog.
+        // Show the text creation dialog immediately
         val context = drawView.context
         if (context is FragmentActivity) {
             val dialog = TextEditorDialogFragment.newInstance(TextStyle()) { textStyle ->
@@ -26,16 +26,16 @@ class TextToolManager(
     }
 
     override fun deactivate() {
-        // No specific deactivation needed, as the dialog is modal.
+        // No specific deactivation needed for controls as they are removed.
     }
 
     override fun isToolActive(): Boolean {
-        // This tool is active only momentarily when the dialog is open.
+        // The tool is active transiently, so we can return false.
         return false
     }
 
     override fun applyChanges() {
-        // Text changes are applied directly through the TextEditorDialogFragment.
+        // Text changes are applied via the TextEditor dialog.
     }
 
     fun editText(textItem: MovableItem.TextItem) {
