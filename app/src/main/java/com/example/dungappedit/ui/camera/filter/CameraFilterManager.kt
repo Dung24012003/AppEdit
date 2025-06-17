@@ -6,9 +6,6 @@ import jp.co.cyberagent.android.gpuimage.GPUImage
 import jp.co.cyberagent.android.gpuimage.GPUImageView
 
 class CameraFilterManager(private val gpuView: GPUImageView) {
-    fun applyFilter(filter: CameraFilter) {
-        gpuView.filter = filter.createFilter()
-    }
 
     fun processImage(bitmap: Bitmap, filter: CameraFilter, rotation: Int = 0): Bitmap {
         val gpuImage = GPUImage(gpuView.context)

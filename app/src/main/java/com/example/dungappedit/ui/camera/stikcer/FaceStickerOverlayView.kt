@@ -98,28 +98,19 @@ class FaceStickerOverlayView @JvmOverloads constructor(
     private fun drawHat(canvas: Canvas, face: Face, targetWidth: Int, targetHeight: Int) {
         val hatBitmap = getStickerBitmap(Sticker.HAT) ?: return
 
-        // STEP 1: CALCULATE SIZE (SCALE)
-        // (You can adjust the coefficient here)
         val scale =
             getStandardScale(face, hatBitmap, targetWidth, targetHeight) * 0.8f // Example: make it 20% smaller
 
-        // STEP 2: DETERMINE ROTATION ANGLE AND PIVOT POINT
         val angle = if (isFrontFacing) face.headEulerAngleZ else -face.headEulerAngleZ
         val pivotX = translateX(face.boundingBox.exactCenterX(), targetWidth)
         val pivotY = translateY(face.boundingBox.exactCenterY(), targetHeight)
 
-        // STEP 3: CALCULATE THE HAT'S INITIAL POSITION (BEFORE ROTATION)
-        // This position is calculated relative to the top of the head.
         val topOfFaceY = translateY(face.boundingBox.top.toFloat(), targetHeight)
         val scaledHatHeight = hatBitmap.height * scale
 
-        // The vertical center of the hat, before rotation.
-        // (You can adjust the -80f offset value here to move it up/down)
         val initialHatCenterY =
-            topOfFaceY - (scaledHatHeight * 0.1f) - 80f // Adjust offset if needed
+            topOfFaceY - (scaledHatHeight * 0.3f)
 
-        // STEP 4: CALCULATE THE FINAL POSITION AFTER ROTATING AROUND THE FACE CENTER
-        // Use getRotatedPoint to find the new position of the hat.
         // The hat's center X is always the face's center (pivotX).
         val (finalHatCenterX, finalHatCenterY) = getRotatedPoint(
             pivotX,
@@ -144,31 +135,22 @@ class FaceStickerOverlayView @JvmOverloads constructor(
     private fun drawHatBunny(canvas: Canvas, face: Face, targetWidth: Int, targetHeight: Int) {
         val hatBitmap = getStickerBitmap(Sticker.HATBunny) ?: return
 
-        // STEP 1: CALCULATE SIZE (SCALE)
-        // (You can adjust the coefficient here)
         val scale = getStandardScale(
             face,
             hatBitmap,
             targetWidth,
             targetHeight
-        ) * 0.8f // Keep it 20% smaller
+        ) * 0.8f
 
-        // STEP 2: DETERMINE ROTATION ANGLE AND PIVOT POINT
         val angle = if (isFrontFacing) face.headEulerAngleZ else -face.headEulerAngleZ
         val pivotX = translateX(face.boundingBox.exactCenterX(), targetWidth)
         val pivotY = translateY(face.boundingBox.exactCenterY(), targetHeight)
 
-        // STEP 3: CALCULATE THE HAT'S INITIAL POSITION (BEFORE ROTATION)
-        // This position is calculated relative to the top of the head.
         val topOfFaceY = translateY(face.boundingBox.top.toFloat(), targetHeight)
         val scaledHatHeight = hatBitmap.height * scale
 
-        // The vertical center of the hat, before rotation.
-        // (You can adjust the -200f offset value here to move it up/down)
-        val initialHatCenterY = topOfFaceY - (scaledHatHeight * 0.1f) - 200f
+        val initialHatCenterY = topOfFaceY - (scaledHatHeight * 0.3f)
 
-        // STEP 4: CALCULATE THE FINAL POSITION AFTER ROTATING AROUND THE FACE CENTER
-        // Use getRotatedPoint to find the new position of the hat.
         val (finalHatCenterX, finalHatCenterY) = getRotatedPoint(
             pivotX,
             initialHatCenterY,

@@ -24,7 +24,7 @@ class GridOverlayView @JvmOverloads constructor(
         val thirdHeight = height / 3f
 
         for (i in 1..2) {
-            canvas.drawLine(i * thirdWidth, 0f, i * thirdWidth, height.toFloat(), paint)
+            canvas.drawLine(i * thirdWidth, 0f, i * thirdWidth, height.toFloat(), paint) //i * thirdWidth = position 1/3
             canvas.drawLine(0f, i * thirdHeight, width.toFloat(), i * thirdHeight, paint)
         }
     }

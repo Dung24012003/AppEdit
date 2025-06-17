@@ -98,7 +98,7 @@ class CameraViewModel : ViewModel() {
     }
 
     fun setBrightnessLevel(level: Int) {
-        _brightnessLevel.value = level.coerceIn(0, 100)
+        _brightnessLevel.value = level.coerceIn(0, 100) //0<=level<=100
     }
 
     fun resetBrightnessLevel() {

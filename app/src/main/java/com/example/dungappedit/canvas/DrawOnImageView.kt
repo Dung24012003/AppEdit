@@ -124,7 +124,7 @@ class DrawOnImageView @JvmOverloads constructor(
         }
 
         private fun getBounds(item: MovableItem): RectF {
-            return when (item) {
+            return when (item) { //rectange
                 is MovableItem.TextItem -> item.getBounds()
                 is MovableItem.ImageItem -> RectF(
                     item.x,
@@ -160,7 +160,7 @@ class DrawOnImageView @JvmOverloads constructor(
         }
 
         fun drawControls(canvas: Canvas) {
-            if (!item.isSelected) return
+            if (!item.isSelected) return //item choose select
             val bounds = getBounds(item)
             val centerX = bounds.centerX()
             val centerY = bounds.centerY()
@@ -168,7 +168,7 @@ class DrawOnImageView @JvmOverloads constructor(
             canvas.save()
             canvas.rotate(item.rotation, centerX, centerY)
             canvas.scale(item.scale, item.scale, centerX, centerY)
-            val inverseScale = 1.0f / item.scale
+            val inverseScale = 1.0f / item.scale //frame
             SELECTED_BORDER_PAINT.strokeWidth = 2f * inverseScale
             canvas.drawRect(getSelectionRect(item), SELECTED_BORDER_PAINT)
             val deleteRect = getDeleteButtonRect(item)
@@ -392,15 +392,17 @@ class DrawOnImageView @JvmOverloads constructor(
                 isMultiTouch = false
                 isRotating = false
                 currentDraggedItem = null
+                //check frame control
                 val selectedItem = movableItems.find { it.isSelected }
                 if (selectedItem != null && handleControlTouch(x, y, selectedItem)) {
                     return
                 }
+                //check item x, y
                 val touchedItem = findTouchedItem(x, y)
                 if (touchedItem != null) {
                     if (handleDoubleClick(touchedItem)) return
-                    lastClickTime = System.currentTimeMillis()
-                    currentDraggedItem = touchedItem
+                    lastClickTime = System.currentTimeMillis() //time click
+                    currentDraggedItem = touchedItem //flag item choose
                     touchOffsetX = x - touchedItem.x
                     touchOffsetY = y - touchedItem.y
                     selectItem(touchedItem)
@@ -686,50 +688,6 @@ class DrawOnImageView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun getBitmap(): Bitmap {
-        val result = createBitmap(width, height)
-        val canvas = Canvas(result)
-        backgroundBitmap?.let { canvas.drawBitmap(it, imageRectLeft, imageRectTop, null) }
-        val imageClipRect = RectF(imageRectLeft, imageRectTop, imageRectRight, imageRectBottom)
-        val saveCount = canvas.save()
-        canvas.clipRect(imageClipRect)
-        canvasBitmap?.let { canvas.drawBitmap(it, 0f, 0f, null) }
-        for (item in movableItems) {
-            when (item) {
-                is MovableItem.TextItem -> {
-                    if (item.textStyle != null) {
-                        item.applyStyle(); item.drawWithStyle(canvas)
-                    } else {
-                        canvas.withSave {
-                            val bounds = item.getBounds()
-                            rotate(item.rotation, bounds.centerX(), bounds.centerY())
-                            scale(item.scale, item.scale, bounds.centerX(), bounds.centerY())
-                            val lines = item.text.split('\n')
-                            val lineHeight = item.paint.fontSpacing
-                            var currentY = item.y
-                            for (line in lines) {
-                                drawText(line, item.x, currentY, item.paint)
-                                currentY += lineHeight
-                            }
-                        }
-                    }
-                }
-
-                is MovableItem.ImageItem -> {
-                    canvas.withSave {
-                        val centerX = item.x + item.bitmap.width / 2f
-                        val centerY = item.y + item.bitmap.height / 2f
-                        rotate(item.rotation, centerX, centerY)
-                        scale(item.scale, item.scale, centerX, centerY)
-                        drawBitmap(item.bitmap, item.x, item.y, imagePaint)
-                    }
-                }
-            }
-        }
-        canvas.restoreToCount(saveCount)
-        return result
-    }
-
     private fun spacing(event: MotionEvent): Float {
         val x = event.getX(0) - event.getX(1)
         val y = event.getY(0) - event.getY(1)
@@ -747,14 +705,6 @@ class DrawOnImageView @JvmOverloads constructor(
         var angle = Math.toDegrees(atan2(deltaY.toDouble(), deltaX.toDouble())).toFloat()
         if (angle < 0) angle += 360f
         return angle
-    }
-
-    fun hasBackgroundBitmap(): Boolean = backgroundBitmap != null
-    fun resetToOriginalBitmap() {
-        originalBackgroundBitmap?.let {
-            clearDrawings()
-            setBackgroundBitmap(it.copy(it.config ?: Bitmap.Config.ARGB_8888, true))
-        }
     }
 
     fun clearDrawings() {

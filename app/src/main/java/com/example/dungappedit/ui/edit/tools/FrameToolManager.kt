@@ -92,6 +92,11 @@ class FrameToolManager(
             FrameItem(R.drawable.frame2, "Frame 2"),
             FrameItem(R.drawable.frame3, "Frame 3"),
             FrameItem(R.drawable.frame4, "Frame 4"),
+            FrameItem(R.drawable.frame5, "Frame 5"),
+            FrameItem(R.drawable.frame, "Frame 1"),
+            FrameItem(R.drawable.frame2, "Frame 2"),
+            FrameItem(R.drawable.frame3, "Frame 3"),
+            FrameItem(R.drawable.frame4, "Frame 4"),
             FrameItem(R.drawable.frame5, "Frame 5")
         )
     }

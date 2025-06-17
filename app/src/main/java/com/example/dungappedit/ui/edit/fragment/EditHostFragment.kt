@@ -352,13 +352,6 @@ class EditHostFragment : Fragment(), DrawOnImageView.OnImageDimensionsChangedLis
         hueToolManager.resetHueAndSaturation()
     }
 
-    fun updateImage(bitmap: Bitmap?) {
-        bitmap?.let {
-            resetToOriginal()
-            binding.drawView.setBackgroundBitmap(it)
-        }
-    }
-
     private inner class ToolsAdapter(
         private val tools: List<Tool>,
         private val onToolClick: (Tool) -> Unit
